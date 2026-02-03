@@ -7,9 +7,11 @@ import { useRealtimeTasks } from '@/hooks/useRealtimeTasks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import { PlusUpgradeDialog } from './PlusUpgradeDialog';
+import { PaywallDialog } from './PaywallDialog';
 import { TasksDialog } from '@/components/TasksDialog';
-import { Trophy, Zap, Lock, Calendar, Target, ChevronRight, Crown, Heart, Bot, Award, CheckCircle } from 'lucide-react';
+import { Trophy, Zap, Lock, Calendar, Target, ChevronRight, Crown, Heart, Bot, Award, CheckCircle, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
@@ -24,6 +26,7 @@ export function RightPanel({ onNavigateToLeaderboard }: RightPanelProps) {
   const { data: tasks } = useDailyTasks();
   const { data: taskProgress } = useUserTaskProgress();
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const [showAllTasks, setShowAllTasks] = useState(false);
 
   // Track completed tasks to avoid duplicate celebrations
@@ -85,9 +88,14 @@ export function RightPanel({ onNavigateToLeaderboard }: RightPanelProps) {
         {!isPremium && (
           <Card className="border-warning/50 bg-gradient-to-br from-warning/10 to-warning/5 overflow-hidden">
             <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Crown className="w-6 h-6 text-warning" />
-                <span className="font-bold text-warning">Plus Üyelik</span>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Crown className="w-6 h-6 text-warning" />
+                  <span className="font-bold text-warning">Plus Üyelik</span>
+                </div>
+                <Badge variant="secondary" className="bg-blue-500/20 text-blue-500 text-xs">
+                  BETA
+                </Badge>
               </div>
               <div className="space-y-2 text-sm mb-4">
                 <div className="flex items-center gap-2">
@@ -103,13 +111,52 @@ export function RightPanel({ onNavigateToLeaderboard }: RightPanelProps) {
                   <span>Özel rozetler</span>
                 </div>
               </div>
-              <Button 
+              <Button
                 className="w-full bg-warning text-warning-foreground hover:bg-warning/90"
-                onClick={() => setShowUpgrade(true)}
+                onClick={() => setShowPaywall(true)}
               >
                 <Crown className="w-4 h-4 mr-2" />
                 Plus'a Katıl
               </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Premium User Card */}
+        {isPremium && (
+          <Card className="border-warning bg-gradient-to-br from-yellow-400/10 via-orange-500/10 to-warning/5 overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-6 h-6 text-warning" />
+                  <span className="font-bold text-warning">Premium Aktif</span>
+                </div>
+                <Badge className="bg-warning text-black font-bold text-xs">
+                  {subscription?.plan_type === 'premium' ? 'PREMIUM' : 'PLUS'}
+                </Badge>
+              </div>
+              <div className="space-y-2 text-sm mb-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Plan</span>
+                  <span className="font-semibold">
+                    {subscription?.plan_type === 'premium' ? 'Yıllık' : 'Aylık'}
+                  </span>
+                </div>
+                {subscription?.expires_at && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Yenilenme</span>
+                    <span className="font-semibold text-xs">
+                      {new Date(subscription.expires_at).toLocaleDateString('tr-TR')}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 p-2 bg-green-500/10 rounded-lg">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                  Tüm premium özellikler aktif
+                </span>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -236,6 +283,7 @@ export function RightPanel({ onNavigateToLeaderboard }: RightPanelProps) {
       </div>
 
       <PlusUpgradeDialog open={showUpgrade} onClose={() => setShowUpgrade(false)} />
+      <PaywallDialog open={showPaywall} onClose={() => setShowPaywall(false)} />
       <TasksDialog open={showAllTasks} onClose={() => setShowAllTasks(false)} />
     </>
   );

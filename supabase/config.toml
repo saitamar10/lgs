@@ -1,0 +1,10 @@
+project_id = "tuascnmjgbarrtwlxzcx"
+
+[functions.ai-coach]
+verify_jwt = false
+
+[functions.generate-questions]
+verify_jwt = false
+
+[functions.generate-lesson]
+verify_jwt = false

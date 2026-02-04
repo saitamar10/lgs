@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useProfile } from '@/hooks/useLeaderboard';
 import { useWeakTopics, WeakTopic } from '@/hooks/useWeakTopics';
@@ -99,10 +99,14 @@ export function ProfilePage({ onBack, onNavigateToUnit }: ProfilePageProps) {
   const [selectedWeakTopic, setSelectedWeakTopic] = useState<WeakTopic | null>(null);
   const [showWeakTopicTest, setShowWeakTopicTest] = useState(false);
 
+  // Memoize expensive calculations
   const isPremium = subscription?.plan_type !== 'free';
-  const levelInfo = calculateLevel(profile?.total_xp || 0);
-  const daysRemaining = studyPlan ? calculateDaysRemaining(studyPlan.exam_date) : 0;
-  const weeklyData = generateWeeklyData(profile?.total_xp || 0);
+  const levelInfo = useMemo(() => calculateLevel(profile?.total_xp || 0), [profile?.total_xp]);
+  const daysRemaining = useMemo(() => studyPlan ? calculateDaysRemaining(studyPlan.exam_date) : 0, [studyPlan]);
+  const weeklyData = useMemo(() => generateWeeklyData(profile?.total_xp || 0), [profile?.total_xp]);
+
+  // Limit weak topics display
+  const displayedWeakTopics = useMemo(() => weakTopics?.slice(0, 5) || [], [weakTopics]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -245,7 +249,7 @@ export function ProfilePage({ onBack, onNavigateToUnit }: ProfilePageProps) {
               </p>
             ) : (
               <div className="space-y-2">
-                {weakTopics.slice(0, 5).map((topic) => (
+                {displayedWeakTopics.map((topic) => (
                   <div
                     key={topic.id}
                     className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg hover:bg-secondary/70 transition-colors"

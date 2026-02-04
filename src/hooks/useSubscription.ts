@@ -26,10 +26,7 @@ export function useSubscription() {
     queryFn: async () => {
       if (!user) return null;
 
-      // Check RevenueCat for active subscription
-      const isPremiumFromRC = await hasActiveSubscription(user.id);
-      const subscriberInfo = await getSubscriberInfo(user.id);
-
+      // FIRST: Check database for subscription (WhatsApp payments on web)
       const { data, error } = await supabase
         .from('user_subscriptions')
         .select('*')
@@ -38,7 +35,37 @@ export function useSubscription() {
 
       if (error) throw error;
 
-      // Determine plan type from RevenueCat
+      // If database has an active subscription, use it (WhatsApp web payment)
+      if (data && data.is_active && data.expires_at) {
+        const expiresAt = new Date(data.expires_at);
+        const isExpired = expiresAt < new Date();
+
+        // If expired, mark as inactive
+        if (isExpired) {
+          await supabase
+            .from('user_subscriptions')
+            .update({ is_active: false })
+            .eq('user_id', user.id);
+
+          return {
+            ...data,
+            is_active: false,
+            plan_type: 'free' as const,
+            features: { unlimited_hearts: false, ad_free: false, ai_coach: false, special_badges: false }
+          } as UserSubscription;
+        }
+
+        // Return database subscription (valid and active)
+        return {
+          ...data,
+          features: data.features as UserSubscription['features']
+        } as UserSubscription;
+      }
+
+      // SECOND: Check RevenueCat for mobile subscriptions
+      const isPremiumFromRC = await hasActiveSubscription(user.id);
+      const subscriberInfo = await getSubscriberInfo(user.id);
+
       let planType: 'free' | 'plus' | 'premium' = 'free';
       let expiresAt: string | null = null;
 
@@ -48,7 +75,6 @@ export function useSubscription() {
 
         if (premiumEntitlement) {
           expiresAt = premiumEntitlement.expires_date || null;
-          // Determine if monthly (plus) or yearly (premium)
           const productId = premiumEntitlement.product_identifier || '';
           planType = productId.includes('yearly') ? 'premium' : 'plus';
         }
@@ -58,7 +84,7 @@ export function useSubscription() {
         ? { unlimited_hearts: true, ad_free: true, ai_coach: true, special_badges: true }
         : { unlimited_hearts: false, ad_free: false, ai_coach: false, special_badges: false };
 
-      // If no subscription exists, create one
+      // If no subscription exists in database, create one
       if (!data) {
         const { data: newData, error: insertError } = await supabase
           .from('user_subscriptions')
@@ -79,24 +105,33 @@ export function useSubscription() {
         } as UserSubscription;
       }
 
-      // Update existing subscription with RevenueCat data
-      const { data: updatedData, error: updateError } = await supabase
-        .from('user_subscriptions')
-        .update({
-          plan_type: planType,
-          is_active: isPremiumFromRC,
-          expires_at: expiresAt,
-          features
-        })
-        .eq('user_id', user.id)
-        .select()
-        .single();
+      // Only update if RevenueCat has active subscription (mobile payment)
+      // Don't override database if RevenueCat is inactive (keeps WhatsApp web payments intact)
+      if (isPremiumFromRC) {
+        const { data: updatedData, error: updateError } = await supabase
+          .from('user_subscriptions')
+          .update({
+            plan_type: planType,
+            is_active: true,
+            expires_at: expiresAt,
+            features
+          })
+          .eq('user_id', user.id)
+          .select()
+          .single();
 
-      if (updateError) throw updateError;
+        if (updateError) throw updateError;
 
+        return {
+          ...updatedData,
+          features: updatedData.features as UserSubscription['features']
+        } as UserSubscription;
+      }
+
+      // Return existing database data without modification
       return {
-        ...updatedData,
-        features: updatedData.features as UserSubscription['features']
+        ...data,
+        features: data.features as UserSubscription['features']
       } as UserSubscription;
     },
     enabled: !!user,

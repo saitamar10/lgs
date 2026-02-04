@@ -17,6 +17,7 @@ import { ArrowLeft, Crown, Check, X, Zap, Heart, Users, Bot, Shield } from 'luci
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { getWhatsAppPaymentUrl } from '@/config/payment';
 
 interface SubscriptionPageProps {
   onBack: () => void;
@@ -116,37 +117,18 @@ export function SubscriptionPage({ onBack }: SubscriptionPageProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Shopier ödeme entegrasyonu
-      // TODO: Edge function oluşturulduktan sonra bu kısım aktif olacak
+      // WhatsApp üzerinden ödeme (sadece web'de)
+      const planName = planToUpgrade.name;
+      const price = planToUpgrade.id === 'monthly' ? '₺49' : '₺399';
+      const whatsappUrl = getWhatsAppPaymentUrl(planName, price);
 
-      toast.info('Shopier ödeme sayfasına yönlendiriliyorsunuz...', { duration: 2000 });
+      toast.success('WhatsApp üzerinden ödeme için yönlendiriliyorsunuz...');
 
-      // DEMO: Gerçek entegrasyonda bu kod çalışacak
-      /*
-      const response = await supabase.functions.invoke('create-shopier-payment', {
-        body: {
-          planType: planToUpgrade.planType,
-          userId: user.id,
-          userEmail: user.email
-        }
-      });
+      // WhatsApp'a yönlendir
+      window.open(whatsappUrl, '_blank');
 
-      if (response.error) throw response.error;
-
-      const { url, orderId } = response.data;
-      localStorage.setItem('pending_order_id', orderId);
-
-      // Shopier ödeme sayfasına yönlendir
-      window.location.href = url;
-      */
-
-      // ŞİMDİLİK DEMO MOD: Direkt plan değiştir
-      setTimeout(async () => {
-        await upgradeMutation.mutateAsync(planToUpgrade.planType);
-        toast.success(`${planToUpgrade.name} planına geçildi! (Demo Mod)`);
-        setShowPaymentDialog(false);
-        setPlanToUpgrade(null);
-      }, 1500);
+      setShowPaymentDialog(false);
+      setPlanToUpgrade(null);
 
     } catch (error) {
       console.error('Payment error:', error);
@@ -467,11 +449,9 @@ export function SubscriptionPage({ onBack }: SubscriptionPageProps) {
               </div>
               <br />
               <div className="text-sm text-muted-foreground">
-                ⚠️ <strong>Not:</strong> Gerçek ödeme için Shopier entegrasyonu kurulmalıdır.
+                📱 <strong>Ödeme Yöntemi:</strong> WhatsApp üzerinden ödeme yapabilirsiniz.
                 <br />
-                Şu an demo moddasınız - ödeme yapmadan plan değişikliği yapılıyor.
-                <br /><br />
-                <strong>Shopier kurulumu için:</strong> SHOPIER_INTEGRATION.md dosyasına bakın.
+                Onayladıktan sonra WhatsApp üzerinden bizimle iletişime geçeceksiniz.
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -482,7 +462,7 @@ export function SubscriptionPage({ onBack }: SubscriptionPageProps) {
               disabled={upgradeMutation.isPending}
               className="bg-primary hover:bg-primary/90"
             >
-              {upgradeMutation.isPending ? 'İşleniyor...' : 'Ödemeyi Onayla'}
+              WhatsApp'tan Devam Et
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

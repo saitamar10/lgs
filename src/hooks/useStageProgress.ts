@@ -221,7 +221,7 @@ export function getStageStatus(progress: StageProgress | null, difficulty: Diffi
     case 'exam':
       return {
         completions: progress.exam_completed ? 1 : 0,
-        isUnlocked: hardComplete,
+        isUnlocked: true, // Exam is always unlocked for everyone
         isComplete: progress.exam_completed || false,
         isMastered: progress.exam_completed || false
       };

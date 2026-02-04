@@ -2,12 +2,11 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useUpgradeSubscription } from '@/hooks/useSubscription';
 import { toast } from 'sonner';
 import { Crown, Heart, Bot, Award, Shield, Loader2, Check, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getWhatsAppPaymentUrl } from '@/config/payment';
 
 interface PlusUpgradeDialogProps {
   open: boolean;
@@ -27,22 +26,21 @@ export function PlusUpgradeDialog({ open, onClose }: PlusUpgradeDialogProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const upgradeSubscription = useUpgradeSubscription();
 
-  // Mock card details (for demo)
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [cvv, setCvv] = useState('');
 
   const handleUpgrade = async () => {
     setIsProcessing(true);
-    
+
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Upgrade subscription
-      await upgradeSubscription.mutateAsync(selectedPlan);
-      
-      toast.success('🎉 Plus üyeliğiniz aktif edildi!');
+      // WhatsApp üzerinden ödeme (sadece web'de)
+      const planName = selectedPlan === 'plus' ? 'Plus Aylık' : 'Premium Yıllık';
+      const price = selectedPlan === 'plus' ? '₺49.99' : '₺359.99';
+      const whatsappUrl = getWhatsAppPaymentUrl(planName, price);
+
+      toast.success('WhatsApp üzerinden ödeme için yönlendiriliyorsunuz...');
+
+      // WhatsApp'a yönlendir
+      window.open(whatsappUrl, '_blank');
+
       onClose();
       setShowPayment(false);
     } catch (error) {
@@ -137,7 +135,7 @@ export function PlusUpgradeDialog({ open, onClose }: PlusUpgradeDialogProps) {
           </>
         ) : (
           <>
-            {/* Payment Form */}
+            {/* Payment Confirmation */}
             <div className="space-y-4 my-4">
               <div className="p-3 bg-secondary/50 rounded-lg flex items-center justify-between">
                 <span className="font-medium">
@@ -148,60 +146,28 @@ export function PlusUpgradeDialog({ open, onClose }: PlusUpgradeDialogProps) {
                 </span>
               </div>
 
-              <div className="space-y-3">
-                <div>
-                  <Label htmlFor="cardNumber">Kart Numarası</Label>
-                  <Input
-                    id="cardNumber"
-                    placeholder="1234 5678 9012 3456"
-                    value={cardNumber}
-                    onChange={(e) => setCardNumber(e.target.value)}
-                    maxLength={19}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="expiry">Son Kullanma</Label>
-                    <Input
-                      id="expiry"
-                      placeholder="MM/YY"
-                      value={expiry}
-                      onChange={(e) => setExpiry(e.target.value)}
-                      maxLength={5}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="cvv">CVV</Label>
-                    <Input
-                      id="cvv"
-                      placeholder="123"
-                      value={cvv}
-                      onChange={(e) => setCvv(e.target.value)}
-                      maxLength={4}
-                      type="password"
-                    />
-                  </div>
-                </div>
+              <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                <p className="text-sm text-muted-foreground text-center">
+                  📱 <strong>WhatsApp Ödeme</strong>
+                  <br /><br />
+                  Onayladıktan sonra WhatsApp üzerinden bizimle iletişime geçeceksiniz.
+                  Ödeme bilgilerini size ileteceğiz.
+                </p>
               </div>
-
-              <p className="text-xs text-muted-foreground text-center">
-                🔒 Ödeme bilgileriniz 256-bit SSL ile şifrelenir
-              </p>
             </div>
 
             <div className="flex gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="flex-1"
                 onClick={() => setShowPayment(false)}
               >
                 Geri
               </Button>
-              <Button 
+              <Button
                 className="flex-1"
                 onClick={handleUpgrade}
-                disabled={isProcessing || !cardNumber || !expiry || !cvv}
+                disabled={isProcessing}
               >
                 {isProcessing ? (
                   <>
@@ -211,7 +177,7 @@ export function PlusUpgradeDialog({ open, onClose }: PlusUpgradeDialogProps) {
                 ) : (
                   <>
                     <Check className="w-4 h-4 mr-2" />
-                    Ödemeyi Tamamla
+                    WhatsApp'a Devam Et
                   </>
                 )}
               </Button>

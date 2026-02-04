@@ -4,9 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, Crown, Sparkles, Loader2, Zap } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
-import { grantPromotionalEntitlement } from '@/lib/revenuecat';
-import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { getWhatsAppPaymentUrl } from '@/config/payment';
 
 interface PaywallDialogProps {
   open: boolean;
@@ -14,30 +13,26 @@ interface PaywallDialogProps {
 }
 
 export function PaywallDialog({ open, onClose }: PaywallDialogProps) {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
 
-  const handleTestSubscription = async (durationDays: number) => {
-    if (!user) {
-      toast.error('Lütfen önce giriş yapın');
-      return;
-    }
-
+  const handleSubscribe = async () => {
     setIsLoading(true);
-    try {
-      const success = await grantPromotionalEntitlement(user.id, 'premium', durationDays);
 
-      if (success) {
-        toast.success(`${durationDays} günlük test aboneliği başarıyla verildi!`);
-        await queryClient.invalidateQueries({ queryKey: ['user-subscription'] });
-        onClose();
-      } else {
-        toast.error('Test aboneliği verilemedi');
-      }
+    try {
+      // WhatsApp üzerinden ödeme (sadece web'de, mobilde RevenueCat kullanılıyor)
+      const planName = selectedPlan === 'monthly' ? 'Aylık Premium' : 'Yıllık Premium';
+      const price = selectedPlan === 'monthly' ? '₺29.99' : '₺249.99';
+      const whatsappUrl = getWhatsAppPaymentUrl(planName, price);
+
+      toast.success('WhatsApp üzerinden ödeme için yönlendiriliyorsunuz...');
+
+      // WhatsApp'a yönlendir
+      window.open(whatsappUrl, '_blank');
+
+      onClose();
     } catch (error) {
-      console.error('Test subscription error:', error);
+      console.error('Payment error:', error);
       toast.error('Bir hata oluştu');
     } finally {
       setIsLoading(false);
@@ -158,12 +153,13 @@ export function PaywallDialog({ open, onClose }: PaywallDialogProps) {
             </div>
           </div>
 
-          {/* CTA Buttons */}
+          {/* CTA Button */}
           <div className="space-y-3">
             <Button
               size="lg"
               className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black font-bold text-lg py-6"
               disabled={isLoading}
+              onClick={handleSubscribe}
             >
               {isLoading ? (
                 <>
@@ -173,46 +169,10 @@ export function PaywallDialog({ open, onClose }: PaywallDialogProps) {
               ) : (
                 <>
                   <Crown className="w-5 h-5 mr-2" />
-                  {selectedPlanData.name} Başlat - {selectedPlanData.price} TL
+                  WhatsApp'tan Satın Al - {selectedPlanData.price} TL
                 </>
               )}
             </Button>
-
-            {/* Test Mode Buttons */}
-            <div className="border-t pt-4 mt-4">
-              <p className="text-xs text-muted-foreground mb-3 text-center">
-                🧪 Test Modu - Geliştirme Amaçlı
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleTestSubscription(1)}
-                  disabled={isLoading}
-                  className="text-xs"
-                >
-                  1 Gün Test
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleTestSubscription(7)}
-                  disabled={isLoading}
-                  className="text-xs"
-                >
-                  7 Gün Test
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleTestSubscription(30)}
-                  disabled={isLoading}
-                  className="text-xs"
-                >
-                  30 Gün Test
-                </Button>
-              </div>
-            </div>
           </div>
 
           {/* Terms */}

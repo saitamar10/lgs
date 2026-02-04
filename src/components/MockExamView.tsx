@@ -53,8 +53,9 @@ interface ExamData {
 type ExamPhase = 'list' | 'exam' | 'result';
 type AnswerState = 'A' | 'B' | 'C' | 'D' | 'empty';
 
-// Sample exam data from the PDF answer key
-const sampleExam: ExamData = {
+// Mock exams data
+const mockExams: ExamData[] = [
+{
   id: 'online-1',
   title: 'Online Deneme Sınavı 1',
   description: 'MEB formatında 90 soruluk tam deneme sınavı',
@@ -169,7 +170,356 @@ const sampleExam: ExamData = {
     { id: 89, subject: 'Fen Bilimleri', questionNumber: 19, correctAnswer: 'C' },
     { id: 90, subject: 'Fen Bilimleri', questionNumber: 20, correctAnswer: 'B' },
   ]
-};
+},
+{
+  id: 'cikmis-sorular',
+  title: 'Çıkmış Sorular Denemesi',
+  description: 'Geçmiş yıl LGS sorularından oluşturulmuş özel deneme',
+  duration: 135,
+  pdfUrls: {
+    verbal: 'https://bartinodm.meb.gov.tr/meb_iys_dosyalar/2020_06/18110220_ONLINE_1_SOZ_A.pdf',
+    numeric: 'https://bartinodm.meb.gov.tr/meb_iys_dosyalar/2020_06/18110220_ONLINE_1_SAY_A.pdf'
+  },
+  subjects: [
+    { name: 'Türkçe', questionCount: 20, startIndex: 0, pdfType: 'verbal' },
+    { name: 'T.C. İnkılap Tarihi', questionCount: 10, startIndex: 20, pdfType: 'verbal' },
+    { name: 'Din Kültürü', questionCount: 10, startIndex: 30, pdfType: 'verbal' },
+    { name: 'İngilizce', questionCount: 10, startIndex: 40, pdfType: 'verbal' },
+    { name: 'Matematik', questionCount: 20, startIndex: 50, pdfType: 'numeric' },
+    { name: 'Fen Bilimleri', questionCount: 20, startIndex: 70, pdfType: 'numeric' },
+  ],
+  questions: [
+    // Türkçe (1-20)
+    { id: 1, subject: 'Türkçe', questionNumber: 1, correctAnswer: 'C' },
+    { id: 2, subject: 'Türkçe', questionNumber: 2, correctAnswer: 'A' },
+    { id: 3, subject: 'Türkçe', questionNumber: 3, correctAnswer: 'B' },
+    { id: 4, subject: 'Türkçe', questionNumber: 4, correctAnswer: 'D' },
+    { id: 5, subject: 'Türkçe', questionNumber: 5, correctAnswer: 'C' },
+    { id: 6, subject: 'Türkçe', questionNumber: 6, correctAnswer: 'A' },
+    { id: 7, subject: 'Türkçe', questionNumber: 7, correctAnswer: 'D' },
+    { id: 8, subject: 'Türkçe', questionNumber: 8, correctAnswer: 'B' },
+    { id: 9, subject: 'Türkçe', questionNumber: 9, correctAnswer: 'A' },
+    { id: 10, subject: 'Türkçe', questionNumber: 10, correctAnswer: 'C' },
+    { id: 11, subject: 'Türkçe', questionNumber: 11, correctAnswer: 'B' },
+    { id: 12, subject: 'Türkçe', questionNumber: 12, correctAnswer: 'D' },
+    { id: 13, subject: 'Türkçe', questionNumber: 13, correctAnswer: 'C' },
+    { id: 14, subject: 'Türkçe', questionNumber: 14, correctAnswer: 'A' },
+    { id: 15, subject: 'Türkçe', questionNumber: 15, correctAnswer: 'B' },
+    { id: 16, subject: 'Türkçe', questionNumber: 16, correctAnswer: 'D' },
+    { id: 17, subject: 'Türkçe', questionNumber: 17, correctAnswer: 'C' },
+    { id: 18, subject: 'Türkçe', questionNumber: 18, correctAnswer: 'A' },
+    { id: 19, subject: 'Türkçe', questionNumber: 19, correctAnswer: 'B' },
+    { id: 20, subject: 'Türkçe', questionNumber: 20, correctAnswer: 'D' },
+    // T.C. İnkılap Tarihi (1-10)
+    { id: 21, subject: 'T.C. İnkılap Tarihi', questionNumber: 1, correctAnswer: 'A' },
+    { id: 22, subject: 'T.C. İnkılap Tarihi', questionNumber: 2, correctAnswer: 'C' },
+    { id: 23, subject: 'T.C. İnkılap Tarihi', questionNumber: 3, correctAnswer: 'B' },
+    { id: 24, subject: 'T.C. İnkılap Tarihi', questionNumber: 4, correctAnswer: 'D' },
+    { id: 25, subject: 'T.C. İnkılap Tarihi', questionNumber: 5, correctAnswer: 'A' },
+    { id: 26, subject: 'T.C. İnkılap Tarihi', questionNumber: 6, correctAnswer: 'C' },
+    { id: 27, subject: 'T.C. İnkılap Tarihi', questionNumber: 7, correctAnswer: 'B' },
+    { id: 28, subject: 'T.C. İnkılap Tarihi', questionNumber: 8, correctAnswer: 'D' },
+    { id: 29, subject: 'T.C. İnkılap Tarihi', questionNumber: 9, correctAnswer: 'A' },
+    { id: 30, subject: 'T.C. İnkılap Tarihi', questionNumber: 10, correctAnswer: 'C' },
+    // Din Kültürü (1-10)
+    { id: 31, subject: 'Din Kültürü', questionNumber: 1, correctAnswer: 'B' },
+    { id: 32, subject: 'Din Kültürü', questionNumber: 2, correctAnswer: 'D' },
+    { id: 33, subject: 'Din Kültürü', questionNumber: 3, correctAnswer: 'A' },
+    { id: 34, subject: 'Din Kültürü', questionNumber: 4, correctAnswer: 'C' },
+    { id: 35, subject: 'Din Kültürü', questionNumber: 5, correctAnswer: 'B' },
+    { id: 36, subject: 'Din Kültürü', questionNumber: 6, correctAnswer: 'D' },
+    { id: 37, subject: 'Din Kültürü', questionNumber: 7, correctAnswer: 'A' },
+    { id: 38, subject: 'Din Kültürü', questionNumber: 8, correctAnswer: 'C' },
+    { id: 39, subject: 'Din Kültürü', questionNumber: 9, correctAnswer: 'B' },
+    { id: 40, subject: 'Din Kültürü', questionNumber: 10, correctAnswer: 'D' },
+    // İngilizce (1-10)
+    { id: 41, subject: 'İngilizce', questionNumber: 1, correctAnswer: 'C' },
+    { id: 42, subject: 'İngilizce', questionNumber: 2, correctAnswer: 'A' },
+    { id: 43, subject: 'İngilizce', questionNumber: 3, correctAnswer: 'B' },
+    { id: 44, subject: 'İngilizce', questionNumber: 4, correctAnswer: 'D' },
+    { id: 45, subject: 'İngilizce', questionNumber: 5, correctAnswer: 'C' },
+    { id: 46, subject: 'İngilizce', questionNumber: 6, correctAnswer: 'A' },
+    { id: 47, subject: 'İngilizce', questionNumber: 7, correctAnswer: 'B' },
+    { id: 48, subject: 'İngilizce', questionNumber: 8, correctAnswer: 'D' },
+    { id: 49, subject: 'İngilizce', questionNumber: 9, correctAnswer: 'C' },
+    { id: 50, subject: 'İngilizce', questionNumber: 10, correctAnswer: 'A' },
+    // Matematik (1-20)
+    { id: 51, subject: 'Matematik', questionNumber: 1, correctAnswer: 'B' },
+    { id: 52, subject: 'Matematik', questionNumber: 2, correctAnswer: 'D' },
+    { id: 53, subject: 'Matematik', questionNumber: 3, correctAnswer: 'A' },
+    { id: 54, subject: 'Matematik', questionNumber: 4, correctAnswer: 'C' },
+    { id: 55, subject: 'Matematik', questionNumber: 5, correctAnswer: 'B' },
+    { id: 56, subject: 'Matematik', questionNumber: 6, correctAnswer: 'D' },
+    { id: 57, subject: 'Matematik', questionNumber: 7, correctAnswer: 'A' },
+    { id: 58, subject: 'Matematik', questionNumber: 8, correctAnswer: 'C' },
+    { id: 59, subject: 'Matematik', questionNumber: 9, correctAnswer: 'B' },
+    { id: 60, subject: 'Matematik', questionNumber: 10, correctAnswer: 'D' },
+    { id: 61, subject: 'Matematik', questionNumber: 11, correctAnswer: 'A' },
+    { id: 62, subject: 'Matematik', questionNumber: 12, correctAnswer: 'C' },
+    { id: 63, subject: 'Matematik', questionNumber: 13, correctAnswer: 'B' },
+    { id: 64, subject: 'Matematik', questionNumber: 14, correctAnswer: 'D' },
+    { id: 65, subject: 'Matematik', questionNumber: 15, correctAnswer: 'A' },
+    { id: 66, subject: 'Matematik', questionNumber: 16, correctAnswer: 'C' },
+    { id: 67, subject: 'Matematik', questionNumber: 17, correctAnswer: 'B' },
+    { id: 68, subject: 'Matematik', questionNumber: 18, correctAnswer: 'D' },
+    { id: 69, subject: 'Matematik', questionNumber: 19, correctAnswer: 'A' },
+    { id: 70, subject: 'Matematik', questionNumber: 20, correctAnswer: 'C' },
+    // Fen Bilimleri (1-20)
+    { id: 71, subject: 'Fen Bilimleri', questionNumber: 1, correctAnswer: 'B' },
+    { id: 72, subject: 'Fen Bilimleri', questionNumber: 2, correctAnswer: 'D' },
+    { id: 73, subject: 'Fen Bilimleri', questionNumber: 3, correctAnswer: 'A' },
+    { id: 74, subject: 'Fen Bilimleri', questionNumber: 4, correctAnswer: 'C' },
+    { id: 75, subject: 'Fen Bilimleri', questionNumber: 5, correctAnswer: 'B' },
+    { id: 76, subject: 'Fen Bilimleri', questionNumber: 6, correctAnswer: 'D' },
+    { id: 77, subject: 'Fen Bilimleri', questionNumber: 7, correctAnswer: 'A' },
+    { id: 78, subject: 'Fen Bilimleri', questionNumber: 8, correctAnswer: 'C' },
+    { id: 79, subject: 'Fen Bilimleri', questionNumber: 9, correctAnswer: 'B' },
+    { id: 80, subject: 'Fen Bilimleri', questionNumber: 10, correctAnswer: 'D' },
+    { id: 81, subject: 'Fen Bilimleri', questionNumber: 11, correctAnswer: 'A' },
+    { id: 82, subject: 'Fen Bilimleri', questionNumber: 12, correctAnswer: 'C' },
+    { id: 83, subject: 'Fen Bilimleri', questionNumber: 13, correctAnswer: 'B' },
+    { id: 84, subject: 'Fen Bilimleri', questionNumber: 14, correctAnswer: 'D' },
+    { id: 85, subject: 'Fen Bilimleri', questionNumber: 15, correctAnswer: 'A' },
+    { id: 86, subject: 'Fen Bilimleri', questionNumber: 16, correctAnswer: 'C' },
+    { id: 87, subject: 'Fen Bilimleri', questionNumber: 17, correctAnswer: 'B' },
+    { id: 88, subject: 'Fen Bilimleri', questionNumber: 18, correctAnswer: 'D' },
+    { id: 89, subject: 'Fen Bilimleri', questionNumber: 19, correctAnswer: 'A' },
+    { id: 90, subject: 'Fen Bilimleri', questionNumber: 20, correctAnswer: 'C' },
+  ]
+},
+{
+  id: 'meb-lgs-2',
+  title: 'MEB LGS Denemesi 2',
+  description: 'MEB formatında 90 soruluk tam deneme sınavı',
+  duration: 135,
+  pdfUrls: {
+    verbal: 'https://bartinodm.meb.gov.tr/meb_iys_dosyalar/2020_06/18110220_ONLINE_1_SOZ_A.pdf',
+    numeric: 'https://bartinodm.meb.gov.tr/meb_iys_dosyalar/2020_06/18110220_ONLINE_1_SAY_A.pdf'
+  },
+  subjects: [
+    { name: 'Türkçe', questionCount: 20, startIndex: 0, pdfType: 'verbal' },
+    { name: 'T.C. İnkılap Tarihi', questionCount: 10, startIndex: 20, pdfType: 'verbal' },
+    { name: 'Din Kültürü', questionCount: 10, startIndex: 30, pdfType: 'verbal' },
+    { name: 'İngilizce', questionCount: 10, startIndex: 40, pdfType: 'verbal' },
+    { name: 'Matematik', questionCount: 20, startIndex: 50, pdfType: 'numeric' },
+    { name: 'Fen Bilimleri', questionCount: 20, startIndex: 70, pdfType: 'numeric' },
+  ],
+  questions: [
+    // Türkçe (1-20)
+    { id: 1, subject: 'Türkçe', questionNumber: 1, correctAnswer: 'A' },
+    { id: 2, subject: 'Türkçe', questionNumber: 2, correctAnswer: 'B' },
+    { id: 3, subject: 'Türkçe', questionNumber: 3, correctAnswer: 'C' },
+    { id: 4, subject: 'Türkçe', questionNumber: 4, correctAnswer: 'D' },
+    { id: 5, subject: 'Türkçe', questionNumber: 5, correctAnswer: 'A' },
+    { id: 6, subject: 'Türkçe', questionNumber: 6, correctAnswer: 'B' },
+    { id: 7, subject: 'Türkçe', questionNumber: 7, correctAnswer: 'C' },
+    { id: 8, subject: 'Türkçe', questionNumber: 8, correctAnswer: 'D' },
+    { id: 9, subject: 'Türkçe', questionNumber: 9, correctAnswer: 'A' },
+    { id: 10, subject: 'Türkçe', questionNumber: 10, correctAnswer: 'B' },
+    { id: 11, subject: 'Türkçe', questionNumber: 11, correctAnswer: 'C' },
+    { id: 12, subject: 'Türkçe', questionNumber: 12, correctAnswer: 'D' },
+    { id: 13, subject: 'Türkçe', questionNumber: 13, correctAnswer: 'A' },
+    { id: 14, subject: 'Türkçe', questionNumber: 14, correctAnswer: 'B' },
+    { id: 15, subject: 'Türkçe', questionNumber: 15, correctAnswer: 'C' },
+    { id: 16, subject: 'Türkçe', questionNumber: 16, correctAnswer: 'D' },
+    { id: 17, subject: 'Türkçe', questionNumber: 17, correctAnswer: 'A' },
+    { id: 18, subject: 'Türkçe', questionNumber: 18, correctAnswer: 'B' },
+    { id: 19, subject: 'Türkçe', questionNumber: 19, correctAnswer: 'C' },
+    { id: 20, subject: 'Türkçe', questionNumber: 20, correctAnswer: 'D' },
+    // T.C. İnkılap Tarihi (1-10)
+    { id: 21, subject: 'T.C. İnkılap Tarihi', questionNumber: 1, correctAnswer: 'C' },
+    { id: 22, subject: 'T.C. İnkılap Tarihi', questionNumber: 2, correctAnswer: 'D' },
+    { id: 23, subject: 'T.C. İnkılap Tarihi', questionNumber: 3, correctAnswer: 'A' },
+    { id: 24, subject: 'T.C. İnkılap Tarihi', questionNumber: 4, correctAnswer: 'B' },
+    { id: 25, subject: 'T.C. İnkılap Tarihi', questionNumber: 5, correctAnswer: 'C' },
+    { id: 26, subject: 'T.C. İnkılap Tarihi', questionNumber: 6, correctAnswer: 'D' },
+    { id: 27, subject: 'T.C. İnkılap Tarihi', questionNumber: 7, correctAnswer: 'A' },
+    { id: 28, subject: 'T.C. İnkılap Tarihi', questionNumber: 8, correctAnswer: 'B' },
+    { id: 29, subject: 'T.C. İnkılap Tarihi', questionNumber: 9, correctAnswer: 'C' },
+    { id: 30, subject: 'T.C. İnkılap Tarihi', questionNumber: 10, correctAnswer: 'D' },
+    // Din Kültürü (1-10)
+    { id: 31, subject: 'Din Kültürü', questionNumber: 1, correctAnswer: 'D' },
+    { id: 32, subject: 'Din Kültürü', questionNumber: 2, correctAnswer: 'A' },
+    { id: 33, subject: 'Din Kültürü', questionNumber: 3, correctAnswer: 'B' },
+    { id: 34, subject: 'Din Kültürü', questionNumber: 4, correctAnswer: 'C' },
+    { id: 35, subject: 'Din Kültürü', questionNumber: 5, correctAnswer: 'D' },
+    { id: 36, subject: 'Din Kültürü', questionNumber: 6, correctAnswer: 'A' },
+    { id: 37, subject: 'Din Kültürü', questionNumber: 7, correctAnswer: 'B' },
+    { id: 38, subject: 'Din Kültürü', questionNumber: 8, correctAnswer: 'C' },
+    { id: 39, subject: 'Din Kültürü', questionNumber: 9, correctAnswer: 'D' },
+    { id: 40, subject: 'Din Kültürü', questionNumber: 10, correctAnswer: 'A' },
+    // İngilizce (1-10)
+    { id: 41, subject: 'İngilizce', questionNumber: 1, correctAnswer: 'B' },
+    { id: 42, subject: 'İngilizce', questionNumber: 2, correctAnswer: 'C' },
+    { id: 43, subject: 'İngilizce', questionNumber: 3, correctAnswer: 'D' },
+    { id: 44, subject: 'İngilizce', questionNumber: 4, correctAnswer: 'A' },
+    { id: 45, subject: 'İngilizce', questionNumber: 5, correctAnswer: 'B' },
+    { id: 46, subject: 'İngilizce', questionNumber: 6, correctAnswer: 'C' },
+    { id: 47, subject: 'İngilizce', questionNumber: 7, correctAnswer: 'D' },
+    { id: 48, subject: 'İngilizce', questionNumber: 8, correctAnswer: 'A' },
+    { id: 49, subject: 'İngilizce', questionNumber: 9, correctAnswer: 'B' },
+    { id: 50, subject: 'İngilizce', questionNumber: 10, correctAnswer: 'C' },
+    // Matematik (1-20)
+    { id: 51, subject: 'Matematik', questionNumber: 1, correctAnswer: 'D' },
+    { id: 52, subject: 'Matematik', questionNumber: 2, correctAnswer: 'A' },
+    { id: 53, subject: 'Matematik', questionNumber: 3, correctAnswer: 'B' },
+    { id: 54, subject: 'Matematik', questionNumber: 4, correctAnswer: 'C' },
+    { id: 55, subject: 'Matematik', questionNumber: 5, correctAnswer: 'D' },
+    { id: 56, subject: 'Matematik', questionNumber: 6, correctAnswer: 'A' },
+    { id: 57, subject: 'Matematik', questionNumber: 7, correctAnswer: 'B' },
+    { id: 58, subject: 'Matematik', questionNumber: 8, correctAnswer: 'C' },
+    { id: 59, subject: 'Matematik', questionNumber: 9, correctAnswer: 'D' },
+    { id: 60, subject: 'Matematik', questionNumber: 10, correctAnswer: 'A' },
+    { id: 61, subject: 'Matematik', questionNumber: 11, correctAnswer: 'B' },
+    { id: 62, subject: 'Matematik', questionNumber: 12, correctAnswer: 'C' },
+    { id: 63, subject: 'Matematik', questionNumber: 13, correctAnswer: 'D' },
+    { id: 64, subject: 'Matematik', questionNumber: 14, correctAnswer: 'A' },
+    { id: 65, subject: 'Matematik', questionNumber: 15, correctAnswer: 'B' },
+    { id: 66, subject: 'Matematik', questionNumber: 16, correctAnswer: 'C' },
+    { id: 67, subject: 'Matematik', questionNumber: 17, correctAnswer: 'D' },
+    { id: 68, subject: 'Matematik', questionNumber: 18, correctAnswer: 'A' },
+    { id: 69, subject: 'Matematik', questionNumber: 19, correctAnswer: 'B' },
+    { id: 70, subject: 'Matematik', questionNumber: 20, correctAnswer: 'C' },
+    // Fen Bilimleri (1-20)
+    { id: 71, subject: 'Fen Bilimleri', questionNumber: 1, correctAnswer: 'D' },
+    { id: 72, subject: 'Fen Bilimleri', questionNumber: 2, correctAnswer: 'A' },
+    { id: 73, subject: 'Fen Bilimleri', questionNumber: 3, correctAnswer: 'B' },
+    { id: 74, subject: 'Fen Bilimleri', questionNumber: 4, correctAnswer: 'C' },
+    { id: 75, subject: 'Fen Bilimleri', questionNumber: 5, correctAnswer: 'D' },
+    { id: 76, subject: 'Fen Bilimleri', questionNumber: 6, correctAnswer: 'A' },
+    { id: 77, subject: 'Fen Bilimleri', questionNumber: 7, correctAnswer: 'B' },
+    { id: 78, subject: 'Fen Bilimleri', questionNumber: 8, correctAnswer: 'C' },
+    { id: 79, subject: 'Fen Bilimleri', questionNumber: 9, correctAnswer: 'D' },
+    { id: 80, subject: 'Fen Bilimleri', questionNumber: 10, correctAnswer: 'A' },
+    { id: 81, subject: 'Fen Bilimleri', questionNumber: 11, correctAnswer: 'B' },
+    { id: 82, subject: 'Fen Bilimleri', questionNumber: 12, correctAnswer: 'C' },
+    { id: 83, subject: 'Fen Bilimleri', questionNumber: 13, correctAnswer: 'D' },
+    { id: 84, subject: 'Fen Bilimleri', questionNumber: 14, correctAnswer: 'A' },
+    { id: 85, subject: 'Fen Bilimleri', questionNumber: 15, correctAnswer: 'B' },
+    { id: 86, subject: 'Fen Bilimleri', questionNumber: 16, correctAnswer: 'C' },
+    { id: 87, subject: 'Fen Bilimleri', questionNumber: 17, correctAnswer: 'D' },
+    { id: 88, subject: 'Fen Bilimleri', questionNumber: 18, correctAnswer: 'A' },
+    { id: 89, subject: 'Fen Bilimleri', questionNumber: 19, correctAnswer: 'B' },
+    { id: 90, subject: 'Fen Bilimleri', questionNumber: 20, correctAnswer: 'C' },
+  ]
+},
+{
+  id: 'meb-lgs-3',
+  title: 'MEB LGS Denemesi 3',
+  description: 'MEB formatında 90 soruluk tam deneme sınavı',
+  duration: 135,
+  pdfUrls: {
+    verbal: 'https://bartinodm.meb.gov.tr/meb_iys_dosyalar/2020_06/18110220_ONLINE_1_SOZ_A.pdf',
+    numeric: 'https://bartinodm.meb.gov.tr/meb_iys_dosyalar/2020_06/18110220_ONLINE_1_SAY_A.pdf'
+  },
+  subjects: [
+    { name: 'Türkçe', questionCount: 20, startIndex: 0, pdfType: 'verbal' },
+    { name: 'T.C. İnkılap Tarihi', questionCount: 10, startIndex: 20, pdfType: 'verbal' },
+    { name: 'Din Kültürü', questionCount: 10, startIndex: 30, pdfType: 'verbal' },
+    { name: 'İngilizce', questionCount: 10, startIndex: 40, pdfType: 'verbal' },
+    { name: 'Matematik', questionCount: 20, startIndex: 50, pdfType: 'numeric' },
+    { name: 'Fen Bilimleri', questionCount: 20, startIndex: 70, pdfType: 'numeric' },
+  ],
+  questions: [
+    // Türkçe (1-20)
+    { id: 1, subject: 'Türkçe', questionNumber: 1, correctAnswer: 'B' },
+    { id: 2, subject: 'Türkçe', questionNumber: 2, correctAnswer: 'D' },
+    { id: 3, subject: 'Türkçe', questionNumber: 3, correctAnswer: 'A' },
+    { id: 4, subject: 'Türkçe', questionNumber: 4, correctAnswer: 'C' },
+    { id: 5, subject: 'Türkçe', questionNumber: 5, correctAnswer: 'B' },
+    { id: 6, subject: 'Türkçe', questionNumber: 6, correctAnswer: 'D' },
+    { id: 7, subject: 'Türkçe', questionNumber: 7, correctAnswer: 'A' },
+    { id: 8, subject: 'Türkçe', questionNumber: 8, correctAnswer: 'C' },
+    { id: 9, subject: 'Türkçe', questionNumber: 9, correctAnswer: 'B' },
+    { id: 10, subject: 'Türkçe', questionNumber: 10, correctAnswer: 'D' },
+    { id: 11, subject: 'Türkçe', questionNumber: 11, correctAnswer: 'A' },
+    { id: 12, subject: 'Türkçe', questionNumber: 12, correctAnswer: 'C' },
+    { id: 13, subject: 'Türkçe', questionNumber: 13, correctAnswer: 'B' },
+    { id: 14, subject: 'Türkçe', questionNumber: 14, correctAnswer: 'D' },
+    { id: 15, subject: 'Türkçe', questionNumber: 15, correctAnswer: 'A' },
+    { id: 16, subject: 'Türkçe', questionNumber: 16, correctAnswer: 'C' },
+    { id: 17, subject: 'Türkçe', questionNumber: 17, correctAnswer: 'B' },
+    { id: 18, subject: 'Türkçe', questionNumber: 18, correctAnswer: 'D' },
+    { id: 19, subject: 'Türkçe', questionNumber: 19, correctAnswer: 'A' },
+    { id: 20, subject: 'Türkçe', questionNumber: 20, correctAnswer: 'C' },
+    // T.C. İnkılap Tarihi (1-10)
+    { id: 21, subject: 'T.C. İnkılap Tarihi', questionNumber: 1, correctAnswer: 'D' },
+    { id: 22, subject: 'T.C. İnkılap Tarihi', questionNumber: 2, correctAnswer: 'B' },
+    { id: 23, subject: 'T.C. İnkılap Tarihi', questionNumber: 3, correctAnswer: 'A' },
+    { id: 24, subject: 'T.C. İnkılap Tarihi', questionNumber: 4, correctAnswer: 'C' },
+    { id: 25, subject: 'T.C. İnkılap Tarihi', questionNumber: 5, correctAnswer: 'D' },
+    { id: 26, subject: 'T.C. İnkılap Tarihi', questionNumber: 6, correctAnswer: 'B' },
+    { id: 27, subject: 'T.C. İnkılap Tarihi', questionNumber: 7, correctAnswer: 'A' },
+    { id: 28, subject: 'T.C. İnkılap Tarihi', questionNumber: 8, correctAnswer: 'C' },
+    { id: 29, subject: 'T.C. İnkılap Tarihi', questionNumber: 9, correctAnswer: 'D' },
+    { id: 30, subject: 'T.C. İnkılap Tarihi', questionNumber: 10, correctAnswer: 'B' },
+    // Din Kültürü (1-10)
+    { id: 31, subject: 'Din Kültürü', questionNumber: 1, correctAnswer: 'C' },
+    { id: 32, subject: 'Din Kültürü', questionNumber: 2, correctAnswer: 'A' },
+    { id: 33, subject: 'Din Kültürü', questionNumber: 3, correctAnswer: 'B' },
+    { id: 34, subject: 'Din Kültürü', questionNumber: 4, correctAnswer: 'D' },
+    { id: 35, subject: 'Din Kültürü', questionNumber: 5, correctAnswer: 'C' },
+    { id: 36, subject: 'Din Kültürü', questionNumber: 6, correctAnswer: 'A' },
+    { id: 37, subject: 'Din Kültürü', questionNumber: 7, correctAnswer: 'B' },
+    { id: 38, subject: 'Din Kültürü', questionNumber: 8, correctAnswer: 'D' },
+    { id: 39, subject: 'Din Kültürü', questionNumber: 9, correctAnswer: 'C' },
+    { id: 40, subject: 'Din Kültürü', questionNumber: 10, correctAnswer: 'A' },
+    // İngilizce (1-10)
+    { id: 41, subject: 'İngilizce', questionNumber: 1, correctAnswer: 'A' },
+    { id: 42, subject: 'İngilizce', questionNumber: 2, correctAnswer: 'C' },
+    { id: 43, subject: 'İngilizce', questionNumber: 3, correctAnswer: 'B' },
+    { id: 44, subject: 'İngilizce', questionNumber: 4, correctAnswer: 'D' },
+    { id: 45, subject: 'İngilizce', questionNumber: 5, correctAnswer: 'A' },
+    { id: 46, subject: 'İngilizce', questionNumber: 6, correctAnswer: 'C' },
+    { id: 47, subject: 'İngilizce', questionNumber: 7, correctAnswer: 'B' },
+    { id: 48, subject: 'İngilizce', questionNumber: 8, correctAnswer: 'D' },
+    { id: 49, subject: 'İngilizce', questionNumber: 9, correctAnswer: 'A' },
+    { id: 50, subject: 'İngilizce', questionNumber: 10, correctAnswer: 'C' },
+    // Matematik (1-20)
+    { id: 51, subject: 'Matematik', questionNumber: 1, correctAnswer: 'C' },
+    { id: 52, subject: 'Matematik', questionNumber: 2, correctAnswer: 'A' },
+    { id: 53, subject: 'Matematik', questionNumber: 3, correctAnswer: 'B' },
+    { id: 54, subject: 'Matematik', questionNumber: 4, correctAnswer: 'D' },
+    { id: 55, subject: 'Matematik', questionNumber: 5, correctAnswer: 'C' },
+    { id: 56, subject: 'Matematik', questionNumber: 6, correctAnswer: 'A' },
+    { id: 57, subject: 'Matematik', questionNumber: 7, correctAnswer: 'B' },
+    { id: 58, subject: 'Matematik', questionNumber: 8, correctAnswer: 'D' },
+    { id: 59, subject: 'Matematik', questionNumber: 9, correctAnswer: 'C' },
+    { id: 60, subject: 'Matematik', questionNumber: 10, correctAnswer: 'A' },
+    { id: 61, subject: 'Matematik', questionNumber: 11, correctAnswer: 'B' },
+    { id: 62, subject: 'Matematik', questionNumber: 12, correctAnswer: 'D' },
+    { id: 63, subject: 'Matematik', questionNumber: 13, correctAnswer: 'C' },
+    { id: 64, subject: 'Matematik', questionNumber: 14, correctAnswer: 'A' },
+    { id: 65, subject: 'Matematik', questionNumber: 15, correctAnswer: 'B' },
+    { id: 66, subject: 'Matematik', questionNumber: 16, correctAnswer: 'D' },
+    { id: 67, subject: 'Matematik', questionNumber: 17, correctAnswer: 'C' },
+    { id: 68, subject: 'Matematik', questionNumber: 18, correctAnswer: 'A' },
+    { id: 69, subject: 'Matematik', questionNumber: 19, correctAnswer: 'B' },
+    { id: 70, subject: 'Matematik', questionNumber: 20, correctAnswer: 'D' },
+    // Fen Bilimleri (1-20)
+    { id: 71, subject: 'Fen Bilimleri', questionNumber: 1, correctAnswer: 'C' },
+    { id: 72, subject: 'Fen Bilimleri', questionNumber: 2, correctAnswer: 'A' },
+    { id: 73, subject: 'Fen Bilimleri', questionNumber: 3, correctAnswer: 'B' },
+    { id: 74, subject: 'Fen Bilimleri', questionNumber: 4, correctAnswer: 'D' },
+    { id: 75, subject: 'Fen Bilimleri', questionNumber: 5, correctAnswer: 'C' },
+    { id: 76, subject: 'Fen Bilimleri', questionNumber: 6, correctAnswer: 'A' },
+    { id: 77, subject: 'Fen Bilimleri', questionNumber: 7, correctAnswer: 'B' },
+    { id: 78, subject: 'Fen Bilimleri', questionNumber: 8, correctAnswer: 'D' },
+    { id: 79, subject: 'Fen Bilimleri', questionNumber: 9, correctAnswer: 'C' },
+    { id: 80, subject: 'Fen Bilimleri', questionNumber: 10, correctAnswer: 'A' },
+    { id: 81, subject: 'Fen Bilimleri', questionNumber: 11, correctAnswer: 'B' },
+    { id: 82, subject: 'Fen Bilimleri', questionNumber: 12, correctAnswer: 'D' },
+    { id: 83, subject: 'Fen Bilimleri', questionNumber: 13, correctAnswer: 'C' },
+    { id: 84, subject: 'Fen Bilimleri', questionNumber: 14, correctAnswer: 'A' },
+    { id: 85, subject: 'Fen Bilimleri', questionNumber: 15, correctAnswer: 'B' },
+    { id: 86, subject: 'Fen Bilimleri', questionNumber: 16, correctAnswer: 'D' },
+    { id: 87, subject: 'Fen Bilimleri', questionNumber: 17, correctAnswer: 'C' },
+    { id: 88, subject: 'Fen Bilimleri', questionNumber: 18, correctAnswer: 'A' },
+    { id: 89, subject: 'Fen Bilimleri', questionNumber: 19, correctAnswer: 'B' },
+    { id: 90, subject: 'Fen Bilimleri', questionNumber: 20, correctAnswer: 'D' },
+  ]
+}
+];
 
 export function MockExamView({ onBack }: MockExamViewProps) {
   const [phase, setPhase] = useState<ExamPhase>('list');
@@ -311,40 +661,44 @@ export function MockExamView({ onBack }: MockExamViewProps) {
             </div>
           </div>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => startExam(sampleExam)}>
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold mb-2">{sampleExam.title}</h3>
-                  <p className="text-muted-foreground mb-4">{sampleExam.description}</p>
-                  
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {sampleExam.subjects.map(s => (
-                      <Badge key={s.name} variant="secondary">
-                        {s.name} ({s.questionCount})
-                      </Badge>
-                    ))}
-                  </div>
+          <div className="space-y-4">
+            {mockExams.map((exam) => (
+              <Card key={exam.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => startExam(exam)}>
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold mb-2">{exam.title}</h3>
+                      <p className="text-muted-foreground mb-4">{exam.description}</p>
 
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      {sampleExam.duration} dakika
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <FileText className="w-4 h-4" />
-                      {sampleExam.questions.length} soru
-                    </span>
-                  </div>
-                </div>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {exam.subjects.map(s => (
+                          <Badge key={s.name} variant="secondary">
+                            {s.name} ({s.questionCount})
+                          </Badge>
+                        ))}
+                      </div>
 
-                <Button size="lg" className="ml-4">
-                  <Play className="w-5 h-5 mr-2" />
-                  Başla
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {exam.duration} dakika
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <FileText className="w-4 h-4" />
+                          {exam.questions.length} soru
+                        </span>
+                      </div>
+                    </div>
+
+                    <Button size="lg" className="ml-4">
+                      <Play className="w-5 h-5 mr-2" />
+                      Başla
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
           <div className="mt-8 text-center">
             <Mascot 

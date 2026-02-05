@@ -36,3 +36,25 @@ $$ LANGUAGE plpgsql;
 
 -- Update all users' leagues based on their current XP
 UPDATE public.profiles SET league = calculate_league(total_xp);
+
+-- Function to search users by friendship code (UUID text search)
+CREATE OR REPLACE FUNCTION search_users_by_friendship_code(
+  search_code TEXT,
+  excluded_ids UUID[]
+)
+RETURNS TABLE (
+  id UUID,
+  user_id UUID,
+  display_name TEXT,
+  total_xp INTEGER,
+  avatar_url TEXT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT p.id, p.user_id, p.display_name, p.total_xp, p.avatar_url
+  FROM profiles p
+  WHERE p.user_id::text ILIKE search_code || '%'
+    AND NOT (p.user_id = ANY(excluded_ids))
+  LIMIT 10;
+END;
+$$ LANGUAGE plpgsql;

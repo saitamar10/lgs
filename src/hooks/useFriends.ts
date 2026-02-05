@@ -54,12 +54,18 @@ export function useFriends() {
 
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('id, display_name, level, total_xp, avatar_url')
-        .in('id', friendIds);
+        .select('id, user_id, display_name, level, total_xp, avatar_url')
+        .in('user_id', friendIds);
 
       if (profileError) throw profileError;
 
-      return profiles as FriendProfile[];
+      return (profiles || []).map(profile => ({
+        id: profile.user_id,
+        display_name: profile.display_name,
+        level: profile.level,
+        total_xp: profile.total_xp,
+        avatar_url: profile.avatar_url
+      })) as FriendProfile[];
     },
   });
 }
@@ -86,17 +92,23 @@ export function useFriendRequests() {
 
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('id, display_name, level, total_xp, avatar_url')
-        .in('id', requesterIds);
+        .select('id, user_id, display_name, level, total_xp, avatar_url')
+        .in('user_id', requesterIds);
 
       if (profileError) throw profileError;
 
-      return profiles as FriendProfile[];
+      return (profiles || []).map(profile => ({
+        id: profile.user_id,
+        display_name: profile.display_name,
+        level: profile.level,
+        total_xp: profile.total_xp,
+        avatar_url: profile.avatar_url
+      })) as FriendProfile[];
     },
   });
 }
 
-// Search users by username
+// Search users by username OR friendship code
 export function useSearchUsers(searchQuery: string) {
   return useQuery({
     queryKey: ['search-users', searchQuery],
@@ -106,16 +118,60 @@ export function useSearchUsers(searchQuery: string) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, display_name, level, total_xp, avatar_url')
-        .ilike('display_name', `%${searchQuery}%`)
-        .neq('id', user.id)
-        .limit(10);
+      // Get existing friendships to filter them out
+      const { data: existingFriendships } = await supabase
+        .from('friendships')
+        .select('friend_id')
+        .eq('user_id', user.id)
+        .in('status', ['pending', 'accepted']);
 
-      if (error) throw error;
+      const excludedIds = [user.id, ...(existingFriendships || []).map(f => f.friend_id)];
 
-      return data as FriendProfile[];
+      // Check if search query looks like a friendship code (8 characters, alphanumeric)
+      const isFriendshipCode = /^[A-Z0-9]{8}$/i.test(searchQuery.trim());
+
+      let query;
+
+      if (isFriendshipCode) {
+        // Search by user_id prefix (friendship code is first 8 chars of user_id)
+        query = supabase
+          .from('profiles')
+          .select('id, user_id, display_name, level, total_xp, avatar_url')
+          .ilike('user_id', `${searchQuery.toLowerCase()}%`)
+          .limit(10);
+      } else {
+        // Search by display name
+        query = supabase
+          .from('profiles')
+          .select('id, user_id, display_name, level, total_xp, avatar_url')
+          .ilike('display_name', `%${searchQuery}%`)
+          .limit(10);
+      }
+
+      // Apply exclusion filter only if we have IDs to exclude
+      if (excludedIds.length > 0) {
+        query = query.not('user_id', 'in', `(${excludedIds.join(',')})`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Search error:', error);
+        throw error;
+      }
+
+      console.log('Search results:', data);
+
+      // Filter out excluded IDs on client side as backup
+      const filtered = (data || []).filter(profile => !excludedIds.includes(profile.user_id));
+
+      return filtered.map(profile => ({
+        id: profile.user_id,
+        display_name: profile.display_name,
+        level: profile.level,
+        total_xp: profile.total_xp,
+        avatar_url: profile.avatar_url
+      })) as FriendProfile[];
     },
     enabled: searchQuery.length >= 2,
   });

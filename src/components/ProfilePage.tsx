@@ -6,6 +6,7 @@ import { useStudyPlan, calculateDaysRemaining } from '@/hooks/useStudyPlan';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useStreak } from '@/hooks/useStreak';
 import { useUserHearts } from '@/hooks/useUserHearts';
+import { calculateLeague, getLeagueProgress, getNextLeague } from '@/lib/leagues';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -15,11 +16,12 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { WeakTopicTestDialog } from './WeakTopicTestDialog';
 import { PaywallDialog } from './PaywallDialog';
-import { 
-  ArrowLeft, 
-  User, 
-  Zap, 
-  Flame, 
+import { toast } from 'sonner';
+import {
+  ArrowLeft,
+  User,
+  Zap,
+  Flame,
   Heart,
   Crown,
   AlertTriangle,
@@ -30,7 +32,10 @@ import {
   Target,
   Trophy,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  Copy,
+  UserPlus,
+  Award
 } from 'lucide-react';
 import {
   BarChart,
@@ -105,8 +110,21 @@ export function ProfilePage({ onBack, onNavigateToUnit }: ProfilePageProps) {
   const daysRemaining = useMemo(() => studyPlan ? calculateDaysRemaining(studyPlan.exam_date) : 0, [studyPlan]);
   const weeklyData = useMemo(() => generateWeeklyData(profile?.total_xp || 0), [profile?.total_xp]);
 
+  // League calculations
+  const currentLeague = useMemo(() => calculateLeague(profile?.total_xp || 0), [profile?.total_xp]);
+  const leagueProgress = useMemo(() => getLeagueProgress(profile?.total_xp || 0), [profile?.total_xp]);
+  const nextLeague = useMemo(() => getNextLeague(profile?.total_xp || 0), [profile?.total_xp]);
+
   // Limit weak topics display
   const displayedWeakTopics = useMemo(() => weakTopics?.slice(0, 5) || [], [weakTopics]);
+
+  // Friendship code (user ID)
+  const friendshipCode = user?.id?.slice(0, 8).toUpperCase() || 'XXXXXXXX';
+
+  const handleCopyFriendCode = () => {
+    navigator.clipboard.writeText(friendshipCode);
+    toast.success('Arkadaşlık kodu kopyalandı!');
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -177,6 +195,82 @@ export function ProfilePage({ onBack, onNavigateToUnit }: ProfilePageProps) {
                 <Trophy className="w-5 h-5 text-warning mx-auto mb-1" />
                 <p className="text-lg font-bold">{longestStreak || 0}</p>
                 <p className="text-xs text-muted-foreground">En Uzun</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* League Card */}
+        <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className={`w-16 h-16 bg-${currentLeague.color}-500 rounded-full flex items-center justify-center text-3xl`}>
+                {currentLeague.icon}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-purple-900">{currentLeague.name}</h3>
+                  <Badge variant="outline" className="text-xs">
+                    {profile?.total_xp || 0} XP
+                  </Badge>
+                </div>
+                {nextLeague ? (
+                  <p className="text-sm text-purple-700 mt-1">
+                    {nextLeague.league.name} için {nextLeague.xpNeeded} XP gerekli
+                  </p>
+                ) : (
+                  <p className="text-sm text-purple-700 mt-1 flex items-center gap-1">
+                    <Crown className="w-4 h-4" />
+                    En yüksek lige ulaştın!
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* League Progress */}
+            {nextLeague && (
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-purple-700">{currentLeague.minXP} XP</span>
+                  <span className="text-purple-900 font-bold">{leagueProgress.toFixed(0)}%</span>
+                  <span className="text-purple-700">{currentLeague.maxXP === Infinity ? '∞' : currentLeague.maxXP} XP</span>
+                </div>
+                <div className="w-full bg-purple-200 rounded-full h-3">
+                  <div
+                    className={`bg-gradient-to-r from-${currentLeague.color}-500 to-${currentLeague.color}-600 h-3 rounded-full transition-all duration-500`}
+                    style={{ width: `${leagueProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Friendship Code */}
+        <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                <UserPlus className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-blue-900">Arkadaşlık Kodum</p>
+                <p className="text-sm text-blue-700">Arkadaşlarınla paylaş!</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="px-4 py-2 bg-white rounded-lg border-2 border-blue-300">
+                  <p className="font-mono font-bold text-blue-600 text-lg tracking-wider">
+                    {friendshipCode}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleCopyFriendCode}
+                  className="border-blue-300 hover:bg-blue-100"
+                >
+                  <Copy className="w-4 h-4 text-blue-600" />
+                </Button>
               </div>
             </div>
           </CardContent>

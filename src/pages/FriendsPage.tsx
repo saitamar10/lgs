@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, UserPlus, UserMinus, Search, ArrowLeft, Trophy, Zap, Loader2 } from 'lucide-react';
+import { UserProfileDialog } from '@/components/UserProfileDialog';
 import {
   useFriends,
   useFriendRequests,
@@ -24,6 +25,7 @@ interface FriendsPageProps {
 export function FriendsPage({ onBack }: FriendsPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [showUserProfile, setShowUserProfile] = useState(false);
 
   // Fetch data from Supabase
   const { data: friends = [], isLoading: friendsLoading } = useFriends();
@@ -79,7 +81,7 @@ export function FriendsPage({ onBack }: FriendsPageProps) {
               Arkadaş Ara
             </CardTitle>
             <CardDescription>
-              Kullanıcı adı ile arkadaş ara ve ekle
+              Kullanıcı adı veya arkadaşlık kodu ile arkadaş ara ve ekle
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -87,7 +89,7 @@ export function FriendsPage({ onBack }: FriendsPageProps) {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Kullanıcı adı ara..."
+                  placeholder="Kullanıcı adı veya arkadaşlık kodu (8 karakter)..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -167,7 +169,13 @@ export function FriendsPage({ onBack }: FriendsPageProps) {
                 <Card key={friend.id}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
+                      <div
+                        className="flex items-center gap-4 flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => {
+                          setSelectedUserId(friend.id);
+                          setShowUserProfile(true);
+                        }}
+                      >
                         <Avatar className="w-12 h-12">
                           <AvatarFallback className="bg-primary text-primary-foreground">
                             {getDisplayName(friend).charAt(0).toUpperCase()}
@@ -283,6 +291,18 @@ export function FriendsPage({ onBack }: FriendsPageProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* User Profile Dialog */}
+      {selectedUserId && (
+        <UserProfileDialog
+          open={showUserProfile}
+          onClose={() => {
+            setShowUserProfile(false);
+            setSelectedUserId(null);
+          }}
+          userId={selectedUserId}
+        />
+      )}
     </div>
   );
 }

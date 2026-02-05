@@ -4,7 +4,7 @@
 
 export const PAYMENT_CONFIG = {
   // WhatsApp business number for payment inquiries (Web only)
-  WHATSAPP_NUMBER: '905555555555', // TODO: Buraya gerçek WhatsApp numaranızı yazın
+  WHATSAPP_NUMBER: '447925405768', // TODO: Buraya gerçek WhatsApp numaranızı yazın
 
   // Payment platform by device type
   WEB_PAYMENT_METHOD: 'whatsapp' as const,

@@ -147,30 +147,34 @@ export function useSearchUsers(searchQuery: string) {
       // Check if search query looks like a friendship code (8 characters, alphanumeric)
       const isFriendshipCode = /^[A-Z0-9]{8}$/i.test(searchQuery.trim());
 
-      let query;
+      let data;
+      let error;
 
       if (isFriendshipCode) {
-        // Search by user_id prefix (friendship code is first 8 chars of user_id)
-        query = supabase
-          .from('profiles')
-          .select('id, user_id, display_name, total_xp, avatar_url')
-          .ilike('user_id', `${searchQuery.toLowerCase()}%`)
-          .limit(10);
+        // Use RPC function for UUID text search
+        const result = await supabase.rpc('search_users_by_friendship_code', {
+          search_code: searchQuery.toLowerCase(),
+          excluded_ids: excludedIds
+        });
+
+        data = result.data;
+        error = result.error;
       } else {
-        // Search by display name
-        query = supabase
+        // Search by display name - no UUID filtering needed
+        const result = await supabase
           .from('profiles')
           .select('id, user_id, display_name, total_xp, avatar_url')
           .ilike('display_name', `%${searchQuery}%`)
           .limit(10);
-      }
 
-      // Apply exclusion filter only if we have IDs to exclude
-      if (excludedIds.length > 0) {
-        query = query.not('user_id', 'in', `(${excludedIds.join(',')})`);
-      }
+        data = result.data;
+        error = result.error;
 
-      const { data, error } = await query;
+        // Filter excluded IDs client-side for display name search
+        if (data) {
+          data = data.filter(profile => !excludedIds.includes(profile.user_id));
+        }
+      }
 
       if (error) {
         console.error('Search error:', error);
@@ -179,10 +183,7 @@ export function useSearchUsers(searchQuery: string) {
 
       console.log('Search results:', data);
 
-      // Filter out excluded IDs on client side as backup
-      const filtered = (data || []).filter(profile => !excludedIds.includes(profile.user_id));
-
-      return filtered.map(profile => ({
+      return (data || []).map(profile => ({
         id: profile.user_id,
         display_name: profile.display_name,
         level: calculateLevel(profile.total_xp || 0),

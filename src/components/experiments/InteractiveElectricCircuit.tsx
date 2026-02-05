@@ -17,7 +17,7 @@ export function InteractiveElectricCircuit() {
   const bulbResistance = 10; // Ohm (sabit)
 
   let current = 0;
-  let voltagePer BulbVoltage = 0;
+  let voltagePerBulb = 0;
   let brightness = 0;
 
   if (switchClosed) {

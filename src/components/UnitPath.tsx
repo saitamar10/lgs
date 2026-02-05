@@ -18,7 +18,7 @@ interface UnitPathProps {
   isPremium?: boolean;
 }
 
-const stages: Difficulty[] = ['easy', 'medium', 'hard', 'exam'];
+const stages: Difficulty[] = ['easy', 'medium', 'hard', 'exam', 'unit-final'];
 
 export function UnitPath({
   unit,
@@ -77,7 +77,7 @@ export function UnitPath({
             </h3>
             {!unitComplete && !isLocked && nextStage && (
               <p className="text-xs text-muted-foreground">
-                Sonraki: {nextStage === 'easy' ? 'Kolay' : nextStage === 'medium' ? 'Orta' : nextStage === 'hard' ? 'Zor' : 'Deneme'}
+                Sonraki: {nextStage === 'easy' ? 'Kolay' : nextStage === 'medium' ? 'Orta' : nextStage === 'hard' ? 'Zor' : nextStage === 'exam' ? 'Deneme' : 'Bölüm Testi'}
               </p>
             )}
             {unitComplete && (

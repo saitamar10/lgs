@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useLeaderboard, LeaderboardEntry } from '@/hooks/useLeaderboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Trophy, Medal, Award, Zap, Flame } from 'lucide-react';
+import { UserProfileDialog } from '@/components/UserProfileDialog';
 import { cn } from '@/lib/utils';
 
 interface LeaderboardProps {
@@ -10,6 +12,8 @@ interface LeaderboardProps {
 
 export function Leaderboard({ currentUserId }: LeaderboardProps) {
   const { data: leaderboard, isLoading } = useLeaderboard();
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [showUserProfile, setShowUserProfile] = useState(false);
 
   if (isLoading) {
     return (
@@ -58,12 +62,18 @@ export function Leaderboard({ currentUserId }: LeaderboardProps) {
             <div
               key={entry.id}
               className={cn(
-                "flex items-center gap-3 p-3 rounded-xl transition-colors",
-                entry.user_id === currentUserId 
-                  ? "bg-primary/10 border border-primary" 
+                "flex items-center gap-3 p-3 rounded-xl transition-colors cursor-pointer",
+                entry.user_id === currentUserId
+                  ? "bg-primary/10 border border-primary hover:bg-primary/20"
                   : "bg-secondary hover:bg-secondary/80",
-                entry.rank === 1 && "bg-warning/10 border border-warning"
+                entry.rank === 1 && "bg-warning/10 border border-warning hover:bg-warning/20"
               )}
+              onClick={() => {
+                if (entry.user_id !== currentUserId) {
+                  setSelectedUserId(entry.user_id);
+                  setShowUserProfile(true);
+                }
+              }}
             >
               <div className="w-8 flex justify-center">
                 {getRankIcon(entry.rank || 0)}
@@ -99,6 +109,18 @@ export function Leaderboard({ currentUserId }: LeaderboardProps) {
             </p>
           )}
         </div>
+
+        {/* User Profile Dialog */}
+        {selectedUserId && (
+          <UserProfileDialog
+            open={showUserProfile}
+            onClose={() => {
+              setShowUserProfile(false);
+              setSelectedUserId(null);
+            }}
+            userId={selectedUserId}
+          />
+        )}
       </CardContent>
     </Card>
   );

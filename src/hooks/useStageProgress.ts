@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 
-export type Difficulty = 'easy' | 'medium' | 'hard' | 'exam';
+export type Difficulty = 'easy' | 'medium' | 'hard' | 'exam' | 'unit-final';
 
 export interface StageProgress {
   id: string;
@@ -11,6 +11,7 @@ export interface StageProgress {
   medium_completions: number;
   hard_completions: number;
   exam_completed: boolean;
+  unit_final_completed?: boolean; // Bölüm Bitiriş Testi
 }
 
 const REQUIRED_COMPLETIONS = 3;
@@ -25,7 +26,7 @@ export function useStageProgress(unitId?: string) {
       
       const { data, error } = await supabase
         .from('user_progress')
-        .select('id, unit_id, easy_completions, medium_completions, hard_completions, exam_completed')
+        .select('id, unit_id, easy_completions, medium_completions, hard_completions, exam_completed, unit_final_completed')
         .eq('user_id', user.id)
         .eq('unit_id', unitId)
         .maybeSingle();
@@ -47,7 +48,7 @@ export function useAllStageProgress() {
       
       const { data, error } = await supabase
         .from('user_progress')
-        .select('id, unit_id, easy_completions, medium_completions, hard_completions, exam_completed')
+        .select('id, unit_id, easy_completions, medium_completions, hard_completions, exam_completed, unit_final_completed')
         .eq('user_id', user.id);
       
       if (error) throw error;
@@ -116,6 +117,8 @@ export function useSubmitStageResult() {
             updates.hard_completions = Math.min((existingProgress.hard_completions || 0) + 1, REQUIRED_COMPLETIONS);
           } else if (difficulty === 'exam') {
             updates.exam_completed = true;
+          } else if (difficulty === 'unit-final') {
+            updates.unit_final_completed = true;
           }
         }
 
@@ -146,6 +149,7 @@ export function useSubmitStageResult() {
             medium_completions: isSuccess && difficulty === 'medium' ? 1 : 0,
             hard_completions: isSuccess && difficulty === 'hard' ? 1 : 0,
             exam_completed: isSuccess && difficulty === 'exam',
+            unit_final_completed: isSuccess && difficulty === 'unit-final',
             completed: false
           });
       }
@@ -186,7 +190,7 @@ export function getStageStatus(progress: StageProgress | null, difficulty: Diffi
   if (!progress) {
     return {
       completions: 0,
-      isUnlocked: difficulty === 'easy',
+      isUnlocked: difficulty === 'easy' || difficulty === 'exam' || difficulty === 'unit-final', // Exam ve Bölüm Testi her zaman açık
       isComplete: false,
       isMastered: false
     };
@@ -225,6 +229,13 @@ export function getStageStatus(progress: StageProgress | null, difficulty: Diffi
         isComplete: progress.exam_completed || false,
         isMastered: progress.exam_completed || false
       };
+    case 'unit-final':
+      return {
+        completions: progress.unit_final_completed ? 1 : 0,
+        isUnlocked: true, // Bölüm Bitiriş Testi herkese açık
+        isComplete: progress.unit_final_completed || false,
+        isMastered: progress.unit_final_completed || false
+      };
   }
 }
 
@@ -239,11 +250,17 @@ export function getNextStage(progress: StageProgress | null): Difficulty | null 
   if (!mediumComplete) return 'medium';
   if (!hardComplete) return 'hard';
   if (!progress.exam_completed) return 'exam';
+  if (!progress.unit_final_completed) return 'unit-final'; // Bölüm Geçme Testi
   return null; // Unit complete
 }
 
 export function isUnitComplete(progress: StageProgress | null): boolean {
   if (!progress) return false;
+
+  // YENİ: Bölüm Geçme Testi yapıldıysa direkt tamamlanmış sayılır
+  if (progress.unit_final_completed) return true;
+
+  // ESKİ YOL: Tüm aşamalar + deneme tamamlanmışsa
   return (
     (progress.easy_completions || 0) >= REQUIRED_COMPLETIONS &&
     (progress.medium_completions || 0) >= REQUIRED_COMPLETIONS &&

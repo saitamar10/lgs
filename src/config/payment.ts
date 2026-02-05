@@ -1,14 +1,12 @@
 // Payment configuration
-// Web: WhatsApp payment
-// Mobile: RevenueCat
+// WhatsApp payment for all platforms
 
 export const PAYMENT_CONFIG = {
   // WhatsApp business number for payment inquiries (Web only)
-  WHATSAPP_NUMBER: '447925405768', // TODO: Buraya gerçek WhatsApp numaranızı yazın
+  WHATSAPP_NUMBER: '447925405768',
 
-  // Payment platform by device type
-  WEB_PAYMENT_METHOD: 'whatsapp' as const,
-  MOBILE_PAYMENT_METHOD: 'revenuecat' as const,
+  // Payment method
+  PAYMENT_METHOD: 'whatsapp' as const,
 };
 
 export const getWhatsAppPaymentUrl = (planName: string, price: string) => {

@@ -20,7 +20,7 @@ export function PaywallDialog({ open, onClose }: PaywallDialogProps) {
     setIsLoading(true);
 
     try {
-      // WhatsApp üzerinden ödeme (sadece web'de, mobilde RevenueCat kullanılıyor)
+      // WhatsApp üzerinden ödeme
       const planName = selectedPlan === 'monthly' ? 'Aylık Premium' : 'Yıllık Premium';
       const price = selectedPlan === 'monthly' ? '₺29.99' : '₺249.99';
       const whatsappUrl = getWhatsAppPaymentUrl(planName, price);

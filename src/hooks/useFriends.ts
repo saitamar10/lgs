@@ -21,6 +21,23 @@ export interface FriendProfile {
   email?: string;
 }
 
+// Helper: Calculate level from XP
+function calculateLevel(xp: number): number {
+  const baseXP = 100;
+  const multiplier = 1.5;
+  let level = 1;
+  let totalXPForLevel = 0;
+  let xpForCurrentLevel = baseXP;
+
+  while (totalXPForLevel + xpForCurrentLevel <= xp) {
+    totalXPForLevel += xpForCurrentLevel;
+    level++;
+    xpForCurrentLevel = Math.floor(baseXP * Math.pow(multiplier, level - 1));
+  }
+
+  return level;
+}
+
 // Helper: Get display name with fallback
 export function getDisplayName(profile: FriendProfile): string {
   if (profile.display_name && profile.display_name.trim()) {
@@ -54,7 +71,7 @@ export function useFriends() {
 
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('id, user_id, display_name, level, total_xp, avatar_url')
+        .select('id, user_id, display_name, total_xp, avatar_url')
         .in('user_id', friendIds);
 
       if (profileError) throw profileError;
@@ -62,7 +79,7 @@ export function useFriends() {
       return (profiles || []).map(profile => ({
         id: profile.user_id,
         display_name: profile.display_name,
-        level: profile.level,
+        level: calculateLevel(profile.total_xp || 0),
         total_xp: profile.total_xp,
         avatar_url: profile.avatar_url
       })) as FriendProfile[];
@@ -92,7 +109,7 @@ export function useFriendRequests() {
 
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('id, user_id, display_name, level, total_xp, avatar_url')
+        .select('id, user_id, display_name, total_xp, avatar_url')
         .in('user_id', requesterIds);
 
       if (profileError) throw profileError;
@@ -100,7 +117,7 @@ export function useFriendRequests() {
       return (profiles || []).map(profile => ({
         id: profile.user_id,
         display_name: profile.display_name,
-        level: profile.level,
+        level: calculateLevel(profile.total_xp || 0),
         total_xp: profile.total_xp,
         avatar_url: profile.avatar_url
       })) as FriendProfile[];
@@ -136,14 +153,14 @@ export function useSearchUsers(searchQuery: string) {
         // Search by user_id prefix (friendship code is first 8 chars of user_id)
         query = supabase
           .from('profiles')
-          .select('id, user_id, display_name, level, total_xp, avatar_url')
+          .select('id, user_id, display_name, total_xp, avatar_url')
           .ilike('user_id', `${searchQuery.toLowerCase()}%`)
           .limit(10);
       } else {
         // Search by display name
         query = supabase
           .from('profiles')
-          .select('id, user_id, display_name, level, total_xp, avatar_url')
+          .select('id, user_id, display_name, total_xp, avatar_url')
           .ilike('display_name', `%${searchQuery}%`)
           .limit(10);
       }
@@ -168,7 +185,7 @@ export function useSearchUsers(searchQuery: string) {
       return filtered.map(profile => ({
         id: profile.user_id,
         display_name: profile.display_name,
-        level: profile.level,
+        level: calculateLevel(profile.total_xp || 0),
         total_xp: profile.total_xp,
         avatar_url: profile.avatar_url
       })) as FriendProfile[];

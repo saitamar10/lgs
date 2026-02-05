@@ -1,4 +1,4 @@
-import { Lock, Star, CheckCircle2, Crown } from 'lucide-react';
+import { Lock, Star, CheckCircle2, Crown, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Difficulty } from '@/hooks/useStageProgress';
 
@@ -47,6 +47,8 @@ export function StageNode({
           return 'bg-destructive shadow-[0_4px_0_hsl(var(--destructive)/0.7)] hover:shadow-[0_2px_0_hsl(var(--destructive)/0.7)] hover:translate-y-0.5';
         case 'exam':
           return 'bg-info shadow-[0_4px_0_hsl(var(--info)/0.7)] hover:shadow-[0_2px_0_hsl(var(--info)/0.7)] hover:translate-y-0.5';
+        case 'unit-final':
+          return 'bg-purple-600 shadow-[0_4px_0_hsl(260_84%_40%)] hover:shadow-[0_2px_0_hsl(260_84%_40%)] hover:translate-y-0.5';
       }
     }
 
@@ -60,6 +62,8 @@ export function StageNode({
         return 'bg-destructive/20 border-2 border-destructive shadow-[0_4px_0_hsl(var(--destructive)/0.3)] hover:bg-destructive/40 hover:shadow-[0_2px_0_hsl(var(--destructive)/0.3)] hover:translate-y-0.5';
       case 'exam':
         return 'bg-info/20 border-2 border-info shadow-[0_4px_0_hsl(var(--info)/0.3)] hover:bg-info/40 hover:shadow-[0_2px_0_hsl(var(--info)/0.3)] hover:translate-y-0.5';
+      case 'unit-final':
+        return 'bg-purple-600/20 border-2 border-purple-600 shadow-[0_4px_0_hsl(260_84%_40%/0.3)] hover:bg-purple-600/40 hover:shadow-[0_2px_0_hsl(260_84%_40%/0.3)] hover:translate-y-0.5';
     }
   };
 
@@ -72,6 +76,13 @@ export function StageNode({
       return <Crown className={cn(
         "w-6 h-6",
         isMastered ? "text-warning-foreground" : completions > 0 ? "text-info-foreground" : "text-info"
+      )} />;
+    }
+
+    if (difficulty === 'unit-final') {
+      return <Award className={cn(
+        "w-6 h-6",
+        isMastered ? "text-white" : completions > 0 ? "text-white" : "text-purple-600"
       )} />;
     }
 
@@ -99,6 +110,7 @@ export function StageNode({
       case 'medium': return 'Orta';
       case 'hard': return 'Zor';
       case 'exam': return 'Deneme';
+      case 'unit-final': return 'Bölüm Testi';
     }
   };
 
@@ -121,15 +133,15 @@ export function StageNode({
         )}
 
         {/* Completion dots */}
-        {difficulty !== 'exam' && isUnlocked && (
+        {difficulty !== 'exam' && difficulty !== 'unit-final' && isUnlocked && (
           <div className="absolute -bottom-1 flex gap-0.5">
             {[...Array(REQUIRED_COMPLETIONS)].map((_, i) => (
-              <div 
-                key={i} 
+              <div
+                key={i}
                 className={cn(
                   "w-2 h-2 rounded-full border border-background",
                   i < completions ? "bg-warning" : "bg-muted"
-                )} 
+                )}
               />
             ))}
           </div>

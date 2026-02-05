@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
-import { hasActiveSubscription, getSubscriberInfo } from '@/lib/revenuecat';
 
 export interface UserSubscription {
   id: string;
@@ -26,7 +25,7 @@ export function useSubscription() {
     queryFn: async () => {
       if (!user) return null;
 
-      // FIRST: Check database for subscription (WhatsApp payments on web)
+      // Check database for subscription
       const { data, error } = await supabase
         .from('user_subscriptions')
         .select('*')
@@ -35,7 +34,7 @@ export function useSubscription() {
 
       if (error) throw error;
 
-      // If database has an active subscription, use it (WhatsApp web payment)
+      // If database has an active subscription, check if expired
       if (data && data.is_active && data.expires_at) {
         const expiresAt = new Date(data.expires_at);
         const isExpired = expiresAt < new Date();
@@ -62,38 +61,16 @@ export function useSubscription() {
         } as UserSubscription;
       }
 
-      // SECOND: Check RevenueCat for mobile subscriptions
-      const isPremiumFromRC = await hasActiveSubscription(user.id);
-      const subscriberInfo = await getSubscriberInfo(user.id);
-
-      let planType: 'free' | 'plus' | 'premium' = 'free';
-      let expiresAt: string | null = null;
-
-      if (isPremiumFromRC && subscriberInfo) {
-        const entitlements = subscriberInfo.subscriber.entitlements;
-        const premiumEntitlement = entitlements['premium'] || Object.values(entitlements)[0];
-
-        if (premiumEntitlement) {
-          expiresAt = premiumEntitlement.expires_date || null;
-          const productId = premiumEntitlement.product_identifier || '';
-          planType = productId.includes('yearly') ? 'premium' : 'plus';
-        }
-      }
-
-      const features = isPremiumFromRC
-        ? { unlimited_hearts: true, ad_free: true, ai_coach: true, special_badges: true }
-        : { unlimited_hearts: false, ad_free: false, ai_coach: false, special_badges: false };
-
-      // If no subscription exists in database, create one
+      // If no subscription exists in database, create a free one
       if (!data) {
         const { data: newData, error: insertError } = await supabase
           .from('user_subscriptions')
           .insert({
             user_id: user.id,
-            plan_type: planType,
-            is_active: isPremiumFromRC,
-            expires_at: expiresAt,
-            features
+            plan_type: 'free',
+            is_active: false,
+            expires_at: null,
+            features: { unlimited_hearts: false, ad_free: false, ai_coach: false, special_badges: false }
           })
           .select()
           .single();
@@ -105,30 +82,7 @@ export function useSubscription() {
         } as UserSubscription;
       }
 
-      // Only update if RevenueCat has active subscription (mobile payment)
-      // Don't override database if RevenueCat is inactive (keeps WhatsApp web payments intact)
-      if (isPremiumFromRC) {
-        const { data: updatedData, error: updateError } = await supabase
-          .from('user_subscriptions')
-          .update({
-            plan_type: planType,
-            is_active: true,
-            expires_at: expiresAt,
-            features
-          })
-          .eq('user_id', user.id)
-          .select()
-          .single();
-
-        if (updateError) throw updateError;
-
-        return {
-          ...updatedData,
-          features: updatedData.features as UserSubscription['features']
-        } as UserSubscription;
-      }
-
-      // Return existing database data without modification
+      // Return existing database data
       return {
         ...data,
         features: data.features as UserSubscription['features']

@@ -3,6 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Heart, Clock, Play, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { admobService } from '@/lib/admob';
+import { toast } from 'sonner';
 
 interface NoHeartsDialogProps {
   open: boolean;
@@ -32,21 +34,46 @@ export function NoHeartsDialog({
     setIsWatchingAd(true);
     setAdProgress(0);
 
-    // Simulate ad progress
-    const interval = setInterval(() => {
-      setAdProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return prev + 3.33;
-      });
-    }, 100);
+    try {
+      // Progress animasyonu
+      const interval = setInterval(() => {
+        setAdProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(interval);
+            return 90;
+          }
+          return prev + 3;
+        });
+      }, 100);
 
-    await onWatchAd();
-    setIsWatchingAd(false);
-    setAdProgress(0);
-    onClose();
+      // Gerçek AdMob reklamını göster
+      await admobService.showRewardedAd();
+
+      clearInterval(interval);
+      setAdProgress(100);
+
+      // Ödülü ver
+      await onWatchAd();
+
+      toast.success('Reklam izlediğin için teşekkürler! +1 ❤️', {
+        duration: 3000,
+      });
+
+      setTimeout(() => {
+        setIsWatchingAd(false);
+        setAdProgress(0);
+        onClose();
+      }, 500);
+
+    } catch (error) {
+      console.error('Ad watch failed:', error);
+      setIsWatchingAd(false);
+      setAdProgress(0);
+
+      toast.error('Reklam yüklenemedi. Lütfen tekrar dene.', {
+        duration: 3000,
+      });
+    }
   };
 
   return (

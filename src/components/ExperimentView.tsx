@@ -23,6 +23,13 @@ const ChemicalReactions3D = lazy(() => import('@/components/experiments/Chemical
 const AcidsAndBases3D = lazy(() => import('@/components/experiments/AcidsAndBases3D').then(m => ({ default: m.AcidsAndBases3D })));
 const SimpleMachines3D = lazy(() => import('@/components/experiments/SimpleMachines3D').then(m => ({ default: m.SimpleMachines3D })));
 
+// Lazy load INTERACTIVE experiments (NEW!)
+const InteractivePressure = lazy(() => import('@/components/experiments/InteractivePressure').then(m => ({ default: m.InteractivePressure })));
+const InteractiveSimpleMachines = lazy(() => import('@/components/experiments/InteractiveSimpleMachines').then(m => ({ default: m.InteractiveSimpleMachines })));
+const InteractiveElectricCircuit = lazy(() => import('@/components/experiments/InteractiveElectricCircuit').then(m => ({ default: m.InteractiveElectricCircuit })));
+const InteractiveMatterStates = lazy(() => import('@/components/experiments/InteractiveMatterStates').then(m => ({ default: m.InteractiveMatterStates })));
+const InteractivePhotosynthesis = lazy(() => import('@/components/experiments/InteractivePhotosynthesis').then(m => ({ default: m.InteractivePhotosynthesis })));
+
 interface ExperimentViewProps {
   unitId: string;
   unitName: string;
@@ -52,17 +59,17 @@ export function ExperimentView({ unitId, unitName, subjectName, onComplete, onEx
     const subjectLower = subjectName.toLowerCase();
 
     if (subjectLower.includes('fen') || subjectLower.includes('science')) {
-      // Fotosentez & Bitkiler
+      // Fotosentez & Bitkiler - INTERACTIVE (NEW!)
       if (unitLower.includes('fotosentez') || unitLower.includes('bitki') || unitLower.includes('yaprak') || unitLower.includes('klorofil')) {
-        return 'photosynthesis';
+        return 'interactive-photosynthesis';
       }
-      // Elektrik
+      // Elektrik - INTERACTIVE (NEW!)
       if (unitLower.includes('elektrik') || unitLower.includes('devre') || unitLower.includes('ampul') || unitLower.includes('pil') || unitLower.includes('akım')) {
-        return 'electric';
+        return 'interactive-electric';
       }
-      // Maddenin halleri
+      // Maddenin halleri - INTERACTIVE (NEW!)
       if (unitLower.includes('madde') || unitLower.includes('hal') || unitLower.includes('katı') || unitLower.includes('sıvı') || unitLower.includes('gaz') || unitLower.includes('buhar')) {
-        return 'matter';
+        return 'interactive-matter';
       }
       // Mevsimler ve İklim
       if (unitLower.includes('mevsim') || unitLower.includes('iklim') || unitLower.includes('dünya') || unitLower.includes('yörünge') || unitLower.includes('güneş')) {
@@ -80,9 +87,13 @@ export function ExperimentView({ unitId, unitName, subjectName, onComplete, onEx
       if (unitLower.includes('mutasyon') || unitLower.includes('modifikasyon') || unitLower.includes('delesyon') || unitLower.includes('insersiyon')) {
         return 'mutation';
       }
-      // Basınç
+      // Basınç - INTERACTIVE (NEW!)
       if (unitLower.includes('basınç') || unitLower.includes('basinc')) {
-        return 'pressure';
+        return 'interactive-pressure';
+      }
+      // Basit Makineler - INTERACTIVE (NEW!)
+      if (unitLower.includes('makine') || unitLower.includes('kaldıraç') || unitLower.includes('makara')) {
+        return 'interactive-machines';
       }
       // Biyoteknoloji
       if (unitLower.includes('biyoteknoloji') || unitLower.includes('gmo') || unitLower.includes('klonlama') || unitLower.includes('gen aktarım')) {
@@ -103,10 +114,6 @@ export function ExperimentView({ unitId, unitName, subjectName, onComplete, onEx
       // Asitler ve Bazlar
       if (unitLower.includes('asit') || unitLower.includes('baz') || unitLower.includes('ph')) {
         return 'acids';
-      }
-      // Basit Makineler
-      if (unitLower.includes('makine') || unitLower.includes('kaldıraç') || unitLower.includes('makara')) {
-        return 'machines';
       }
       // Fallback: Genel Fen deneyi için matter states göster
       return 'matter';
@@ -255,6 +262,11 @@ export function ExperimentView({ unitId, unitName, subjectName, onComplete, onEx
                       {experiment3D === 'reactions' && <ChemicalReactions3D />}
                       {experiment3D === 'acids' && <AcidsAndBases3D />}
                       {experiment3D === 'machines' && <SimpleMachines3D />}
+                      {experiment3D === 'interactive-pressure' && <InteractivePressure />}
+                      {experiment3D === 'interactive-machines' && <InteractiveSimpleMachines />}
+                      {experiment3D === 'interactive-electric' && <InteractiveElectricCircuit />}
+                      {experiment3D === 'interactive-matter' && <InteractiveMatterStates />}
+                      {experiment3D === 'interactive-photosynthesis' && <InteractivePhotosynthesis />}
                     </Suspense>
                   </div>
                 </div>

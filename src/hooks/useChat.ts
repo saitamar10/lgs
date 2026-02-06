@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useEffect } from 'react';
+import { useNotifications } from './useNotifications';
 
 export interface Conversation {
   id: string;
@@ -163,6 +164,7 @@ export function useConversations() {
 export function useMessages(conversationId: string | null) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { showNotification, permission } = useNotifications();
 
   const query = useQuery({
     queryKey: ['messages', conversationId],
@@ -172,8 +174,13 @@ export function useMessages(conversationId: string | null) {
       const { data, error } = await supabase
         .from('messages')
         .select(`
-          *,
-          sender:sender_id(display_name)
+          id,
+          conversation_id,
+          sender_id,
+          content,
+          created_at,
+          is_read,
+          is_deleted
         `)
         .eq('conversation_id', conversationId)
         .eq('is_deleted', false)
@@ -181,9 +188,18 @@ export function useMessages(conversationId: string | null) {
 
       if (error) throw error;
 
+      // Get sender profiles separately
+      const senderIds = [...new Set(data.map(m => m.sender_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name')
+        .in('user_id', senderIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p.display_name]) || []);
+
       return data.map(m => ({
         ...m,
-        sender: { display_name: (m.sender as any)?.display_name || 'Unknown' }
+        sender: { display_name: profileMap.get(m.sender_id) || 'Unknown' }
       })) as Message[];
     },
     enabled: !!conversationId && !!user
@@ -203,7 +219,35 @@ export function useMessages(conversationId: string | null) {
           table: 'messages',
           filter: `conversation_id=eq.${conversationId}`
         },
-        () => {
+        async (payload) => {
+          const newMessage = payload.new as any;
+
+          // Only show notification if message is from someone else
+          if (newMessage.sender_id !== user.id && permission === 'granted') {
+            // Get sender name
+            const { data: senderProfile } = await supabase
+              .from('profiles')
+              .select('display_name')
+              .eq('user_id', newMessage.sender_id)
+              .single();
+
+            const senderName = senderProfile?.display_name || 'Birisi';
+
+            // Show browser notification
+            showNotification(`${senderName} mesaj gönderdi`, {
+              body: newMessage.content,
+              tag: conversationId,
+              requireInteraction: false
+            });
+
+            // Update page title with notification
+            const originalTitle = document.title;
+            document.title = '(1) Yeni Mesaj - LGS';
+            setTimeout(() => {
+              document.title = originalTitle;
+            }, 5000);
+          }
+
           queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
           queryClient.invalidateQueries({ queryKey: ['conversations'] });
         }
@@ -213,7 +257,7 @@ export function useMessages(conversationId: string | null) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId, user, queryClient]);
+  }, [conversationId, user, queryClient, permission, showNotification]);
 
   return query;
 }

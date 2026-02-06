@@ -11,6 +11,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useStreak } from '@/hooks/useStreak';
 import { useUpdateTaskProgress, useDailyTasks } from '@/hooks/useDailyTasks';
 import { useDailyRecommendation } from '@/hooks/useDailyRecommendation';
+import { useNotifications } from '@/hooks/useNotifications';
 import { Sidebar } from '@/components/Sidebar';
 import { MobileHeader } from '@/components/MobileHeader';
 import { RightPanel } from '@/components/RightPanel';
@@ -61,6 +62,7 @@ interface ExperimentState {
 
 export function Dashboard() {
   const { user } = useAuth();
+  const { requestPermission, permission } = useNotifications();
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [quizState, setQuizState] = useState<QuizState | null>(null);
@@ -76,6 +78,13 @@ export function Dashboard() {
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   const [lessonSlides, setLessonSlides] = useState<LessonSlide[]>([]);
   const [isGeneratingLesson, setIsGeneratingLesson] = useState(false);
+
+  // Request notification permission on first load
+  useEffect(() => {
+    if (user && permission === 'default') {
+      requestPermission();
+    }
+  }, [user, permission, requestPermission]);
 
   const { data: subjects, isLoading: subjectsLoading } = useSubjects();
   const { data: units, isLoading: unitsLoading } = useUnits(selectedSubject?.id);

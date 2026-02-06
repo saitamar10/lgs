@@ -64,7 +64,7 @@ export function useConversations() {
       // Get all conversation IDs user is part of
       const { data: participants, error: participantsError } = await supabase
         .from('conversation_participants')
-        .select('conversation_id, conversation:conversations(*)')
+        .select('conversation_id')
         .eq('user_id', user.id);
 
       if (participantsError) throw participantsError;
@@ -73,16 +73,34 @@ export function useConversations() {
 
       if (conversationIds.length === 0) return [];
 
+      // Get conversations data
+      const { data: conversationsData } = await supabase
+        .from('conversations')
+        .select('*')
+        .in('id', conversationIds);
+
       // Get other participants for each conversation
       const conversations = await Promise.all(
         conversationIds.map(async (convId) => {
           // Get other user in conversation
           const { data: otherParticipant } = await supabase
             .from('conversation_participants')
-            .select('user_id, profiles:user_id(display_name)')
+            .select('user_id')
             .eq('conversation_id', convId)
             .neq('user_id', user.id)
             .single();
+
+          // Get other user's profile
+          let otherUserName = 'Kullanıcı';
+          if (otherParticipant) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('display_name')
+              .eq('user_id', otherParticipant.user_id)
+              .single();
+
+            otherUserName = profile?.display_name || 'Kullanıcı';
+          }
 
           // Get last message
           const { data: lastMessage } = await supabase
@@ -110,7 +128,7 @@ export function useConversations() {
             .gt('created_at', participantData?.last_read_at || new Date(0).toISOString())
             .eq('is_deleted', false);
 
-          const conv = participants.find(p => p.conversation_id === convId)?.conversation;
+          const conv = conversationsData?.find(c => c.id === convId);
 
           return {
             id: convId,
@@ -118,7 +136,7 @@ export function useConversations() {
             updated_at: conv?.updated_at || '',
             other_user: otherParticipant ? {
               user_id: otherParticipant.user_id,
-              display_name: (otherParticipant.profiles as any)?.display_name || 'Unknown'
+              display_name: otherUserName
             } : undefined,
             last_message: lastMessage || undefined,
             unread_count: unreadCount || 0

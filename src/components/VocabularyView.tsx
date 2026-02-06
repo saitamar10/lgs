@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,9 +6,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Plus, BookOpen, Volume2, Check, X, Gamepad2, Trophy, Info } from 'lucide-react';
+import { ArrowLeft, Plus, BookOpen, Volume2, Check, X, Gamepad2, Trophy, Info, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useUpdateTaskProgress, useDailyTasks } from '@/hooks/useDailyTasks';
+import { useAuth } from '@/lib/auth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Word {
   id: string;
@@ -136,10 +139,17 @@ const HangmanFigure = ({ wrongGuesses }: { wrongGuesses: number }) => {
 };
 
 export function VocabularyView({ onBack }: VocabularyViewProps) {
+  const { user } = useAuth();
   const [words, setWords] = useState<Word[]>(INITIAL_WORDS);
   const [view, setView] = useState<'menu' | 'add' | 'study' | 'game' | 'hangman'>('menu');
   const [newWord, setNewWord] = useState({ english: '', turkish: '', example: '', level: 'A1' as 'A1' | 'A2' | 'B1' });
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [gameCompleteScore, setGameCompleteScore] = useState(0);
+
+  // Daily task hooks
+  const { data: dailyTasks } = useDailyTasks();
+  const updateTaskProgress = useUpdateTaskProgress();
 
   // Study mode states
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
@@ -198,10 +208,20 @@ export function VocabularyView({ onBack }: VocabularyViewProps) {
     }
   };
 
-  const handleLearnWord = () => {
+  const handleLearnWord = async () => {
     const currentWord = words[currentWordIndex];
     setWords(words.map(w => w.id === currentWord.id ? { ...w, learned: true } : w));
     toast.success('Kelime defterine eklendi! 📝');
+
+    // Update daily task: "10 Kelime Öğren" task (task_type = 'vocabulary')
+    const learnWordsTask = dailyTasks?.find(t => t.task_type === 'vocabulary');
+    if (learnWordsTask && user) {
+      await updateTaskProgress.mutateAsync({
+        taskId: learnWordsTask.id,
+        increment: 1
+      });
+    }
+
     setShowMeaning(false);
     nextWord();
   };
@@ -256,12 +276,41 @@ export function VocabularyView({ onBack }: VocabularyViewProps) {
       if (firstWord?.id === secondWord?.id && firstType !== secondType) {
         // Match!
         setMatchedPairs([...matchedPairs, first, second]);
-        setGameScore(gameScore + 10);
+        const newScore = gameScore + 10;
+        setGameScore(newScore);
         toast.success('Eşleştirme başarılı! +10 puan 🎉');
 
+        // Check if game completed
         if (matchedPairs.length + 2 === gameWords.length * 2) {
-          setTimeout(() => {
-            toast.success(`Oyunu bitirdin! Toplam: ${gameScore + 10} puan 🏆`);
+          setTimeout(async () => {
+            // Award XP
+            if (user) {
+              const xpReward = newScore; // 1 puan = 1 XP
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('total_xp')
+                .eq('user_id', user.id)
+                .single();
+
+              if (profile) {
+                await supabase
+                  .from('profiles')
+                  .update({ total_xp: (profile.total_xp || 0) + xpReward })
+                  .eq('user_id', user.id);
+              }
+
+              // Update daily task
+              const matchWordsTask = dailyTasks?.find(t => t.task_type === 'vocabulary');
+              if (matchWordsTask) {
+                await updateTaskProgress.mutateAsync({
+                  taskId: matchWordsTask.id,
+                  increment: 1
+                });
+              }
+
+              setGameCompleteScore(newScore);
+              setShowSuccessDialog(true);
+            }
           }, 500);
         }
       } else {
@@ -478,6 +527,50 @@ export function VocabularyView({ onBack }: VocabularyViewProps) {
               >
                 Kelimeyi Ekle
               </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Success Dialog for Game Completion */}
+        <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-center text-2xl">🎉 Başardın!</DialogTitle>
+            </DialogHeader>
+            <div className="text-center space-y-4 py-4">
+              <div className="w-20 h-20 mx-auto bg-gradient-to-br from-warning to-primary rounded-full flex items-center justify-center">
+                <Trophy className="w-10 h-10 text-white" />
+              </div>
+              <div>
+                <p className="text-4xl font-bold text-primary mb-2">{gameCompleteScore} Puan</p>
+                <p className="text-lg font-semibold text-success">+{gameCompleteScore} XP Kazandın!</p>
+              </div>
+              <div className="p-4 bg-success/10 rounded-lg border border-success/20">
+                <p className="text-sm text-muted-foreground">
+                  Tüm kelimeleri başarıyla eşleştirdin! 🌟
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowSuccessDialog(false);
+                    setView('menu');
+                  }}
+                  className="flex-1"
+                >
+                  Ana Menü
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowSuccessDialog(false);
+                    startMatchingGame();
+                  }}
+                  className="flex-1"
+                >
+                  Tekrar Oyna
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

@@ -102,13 +102,25 @@ export function useCheckBadgeEligibility() {
     streakDays?: number;
     xpEarned?: number;
     wordsLearned?: number;
+    unitsCompleted?: number;
+    leaderboardRank?: number;
+    perfectScores?: number;
+    speedCompletions?: number;
+    leagueLevel?: number;
+    friendsAdded?: number;
+    isPremium?: boolean;
+    accountAgeDays?: number;
+    subjectXp?: Record<string, number>;
   }) => {
     if (!badges || !userBadges || !user) return;
 
     const earnedBadgeIds = new Set(userBadges.map(ub => ub.badge_id));
 
     for (const badge of badges) {
-      if (earnedBadgeIds.has(badge.id) || badge.is_premium) continue;
+      if (earnedBadgeIds.has(badge.id)) continue;
+
+      // Skip premium badges unless user is premium
+      if (badge.is_premium && !stats.isPremium) continue;
 
       let eligible = false;
 
@@ -124,6 +136,49 @@ export function useCheckBadgeEligibility() {
           break;
         case 'words_learned':
           eligible = (stats.wordsLearned ?? 0) >= (badge.requirement_value ?? 0);
+          break;
+        case 'units_completed':
+          eligible = (stats.unitsCompleted ?? 0) >= (badge.requirement_value ?? 0);
+          break;
+        case 'leaderboard_rank':
+          eligible = (stats.leaderboardRank ?? 999) <= (badge.requirement_value ?? 0);
+          break;
+        case 'perfect_scores':
+          eligible = (stats.perfectScores ?? 0) >= (badge.requirement_value ?? 0);
+          break;
+        case 'speed_completion':
+          eligible = (stats.speedCompletions ?? 0) >= (badge.requirement_value ?? 0);
+          break;
+        case 'league_level':
+          eligible = (stats.leagueLevel ?? 0) >= (badge.requirement_value ?? 0);
+          break;
+        case 'friends_added':
+          eligible = (stats.friendsAdded ?? 0) >= (badge.requirement_value ?? 0);
+          break;
+        case 'is_premium':
+          eligible = stats.isPremium ?? false;
+          break;
+        case 'account_age_days':
+          eligible = (stats.accountAgeDays ?? 0) >= (badge.requirement_value ?? 0);
+          break;
+        // Subject-specific XP badges
+        case 'subject_xp_math':
+          eligible = (stats.subjectXp?.['matematik'] ?? 0) >= (badge.requirement_value ?? 0);
+          break;
+        case 'subject_xp_physics':
+          eligible = (stats.subjectXp?.['fizik'] ?? 0) >= (badge.requirement_value ?? 0);
+          break;
+        case 'subject_xp_chemistry':
+          eligible = (stats.subjectXp?.['kimya'] ?? 0) >= (badge.requirement_value ?? 0);
+          break;
+        case 'subject_xp_biology':
+          eligible = (stats.subjectXp?.['biyoloji'] ?? 0) >= (badge.requirement_value ?? 0);
+          break;
+        case 'subject_xp_history':
+          eligible = (stats.subjectXp?.['tarih'] ?? 0) >= (badge.requirement_value ?? 0);
+          break;
+        case 'subject_xp_literature':
+          eligible = (stats.subjectXp?.['edebiyat'] ?? 0) >= (badge.requirement_value ?? 0);
           break;
       }
 

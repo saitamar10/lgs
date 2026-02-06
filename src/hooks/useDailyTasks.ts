@@ -91,6 +91,7 @@ export function useUpdateTaskProgress() {
 
       const newProgress = (existing?.progress || 0) + increment;
       const isCompleted = newProgress >= task.target_count;
+      const wasAlreadyCompleted = existing?.completed || false;
 
       if (existing) {
         const { error } = await supabase
@@ -118,8 +119,8 @@ export function useUpdateTaskProgress() {
         if (error) throw error;
       }
 
-      // If just completed, award rewards
-      if (isCompleted && !existing?.completed) {
+      // If just completed (not already completed), award rewards
+      if (isCompleted && !wasAlreadyCompleted) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('total_xp, coins')
@@ -135,13 +136,20 @@ export function useUpdateTaskProgress() {
             })
             .eq('user_id', user.id);
         }
+
+        return { completed: true, justCompleted: true, task };
       }
 
-      return { completed: isCompleted };
+      return { completed: isCompleted, justCompleted: false };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['user-task-progress'] });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+
+      // Only show completion toast if task was JUST completed (not already completed)
+      if (data?.justCompleted && data?.task) {
+        // Notification will be shown by the component calling this mutation
+      }
     }
   });
 }

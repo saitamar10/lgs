@@ -32,11 +32,13 @@ import { TodaysPlanView } from '@/components/TodaysPlanView';
 import { ExperimentView } from '@/components/ExperimentView';
 import { FriendsPage } from '@/pages/FriendsPage';
 import { SubscriptionPage } from '@/pages/SubscriptionPage';
+import { MobileChatPage } from '@/components/MobileChatPage';
+import { DesktopChatWidget } from '@/components/DesktopChatWidget';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { isScienceSubject } from '@/utils/subjectHelpers';
 
-type View = 'dashboard' | 'units' | 'quiz' | 'complete' | 'leaderboard' | 'profile' | 'coach' | 'vocabulary' | 'mock-exam' | 'lesson' | 'todays-plan' | 'friends' | 'subscription' | 'experiment';
+type View = 'dashboard' | 'units' | 'quiz' | 'complete' | 'leaderboard' | 'profile' | 'coach' | 'vocabulary' | 'mock-exam' | 'lesson' | 'todays-plan' | 'friends' | 'subscription' | 'experiment' | 'chat';
 
 interface QuizState {
   unitId: string;
@@ -424,6 +426,11 @@ export function Dashboard() {
     return <SubscriptionPage onBack={() => setCurrentView('dashboard')} />;
   }
 
+  // Chat view
+  if (currentView === 'chat') {
+    return <MobileChatPage onBack={() => setCurrentView('dashboard')} />;
+  }
+
   // Experiment view
   if (currentView === 'experiment' && experimentState) {
     return (
@@ -634,6 +641,9 @@ export function Dashboard() {
           }
         }}
       />
+
+      {/* Desktop Chat Widget (Facebook-style) & Mobile Chat Button */}
+      <DesktopChatWidget onOpenMobileChat={() => setCurrentView('chat')} />
     </div>
   );
 }

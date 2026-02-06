@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
@@ -10,9 +10,18 @@ import { useAuth } from '@/lib/auth';
 export function useRealtimeTasks() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const notifiedTasksRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user) return;
+
+    // Reset notified tasks on new day
+    const today = new Date().toISOString().split('T')[0];
+    const lastResetDate = localStorage.getItem('lastTaskResetDate');
+    if (lastResetDate !== today) {
+      notifiedTasksRef.current.clear();
+      localStorage.setItem('lastTaskResetDate', today);
+    }
 
     // Subscribe to user_task_progress changes for current user
     const channel = supabase
@@ -28,10 +37,10 @@ export function useRealtimeTasks() {
         (payload) => {
           console.log('Task progress changed:', payload);
 
-          // Invalidate queries to trigger refetch
+          // Only invalidate queries, don't show toast here
+          // Toast notifications should only come from the mutation itself
           queryClient.invalidateQueries({ queryKey: ['user-task-progress'] });
           queryClient.invalidateQueries({ queryKey: ['profile'] });
-          queryClient.invalidateQueries({ queryKey: ['daily-tasks'] });
         }
       )
       .subscribe();

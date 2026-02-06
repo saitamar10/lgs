@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, ArrowRight, Beaker, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Beaker, CheckCircle2, AlertTriangle, Loader2, Maximize2, Minimize2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useExperiment, generatePlaceholderExperiment, ExperimentStep } from '@/hooks/useExperiments';
 
@@ -40,6 +40,7 @@ interface ExperimentViewProps {
 
 export function ExperimentView({ unitId, unitName, subjectName, onComplete, onExit }: ExperimentViewProps) {
   const [currentStep, setCurrentStep] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Fetch experiment from database
   const { data: experimentData, isLoading } = useExperiment(unitId);
@@ -123,6 +124,22 @@ export function ExperimentView({ unitId, unitName, subjectName, onComplete, onEx
 
   const experiment3D = get3DExperiment();
 
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        setIsFullscreen(true);
+        toast.success('Tam ekran modu açıldı');
+      }).catch(() => {
+        toast.error('Tam ekran modu desteklenmiyor');
+      });
+    } else {
+      document.exitFullscreen().then(() => {
+        setIsFullscreen(false);
+        toast.info('Tam ekran modundan çıkıldı');
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -189,9 +206,29 @@ export function ExperimentView({ unitId, unitName, subjectName, onComplete, onEx
                 <p className="text-sm text-muted-foreground">{subjectName}</p>
               </div>
             </div>
-            <Badge variant="outline">
-              {currentStep + 1} / {experiment.length}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleFullscreen}
+                className="hidden md:flex"
+              >
+                {isFullscreen ? (
+                  <>
+                    <Minimize2 className="w-4 h-4 mr-2" />
+                    Çıkış
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="w-4 h-4 mr-2" />
+                    Tam Ekran
+                  </>
+                )}
+              </Button>
+              <Badge variant="outline">
+                {currentStep + 1} / {experiment.length}
+              </Badge>
+            </div>
           </div>
           <Progress value={progressPercentage} className="h-2" />
         </div>
@@ -235,9 +272,30 @@ export function ExperimentView({ unitId, unitName, subjectName, onComplete, onEx
               {/* 3D Interactive Experiment - FULL SCREEN - Show on all steps */}
               {experiment3D && (
                 <div className="my-6">
-                  <div className="mb-2 flex items-center gap-2 text-primary">
-                    <Beaker className="w-5 h-5" />
-                    <h3 className="font-bold">🎮 3D Simülasyon</h3>
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-primary">
+                      <Beaker className="w-5 h-5" />
+                      <h3 className="font-bold">🎮 3D Simülasyon</h3>
+                    </div>
+                    {/* Mobile Fullscreen Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleFullscreen}
+                      className="md:hidden"
+                    >
+                      {isFullscreen ? (
+                        <>
+                          <Minimize2 className="w-4 h-4 mr-2" />
+                          Normal
+                        </>
+                      ) : (
+                        <>
+                          <Maximize2 className="w-4 h-4 mr-2" />
+                          Tam Ekran
+                        </>
+                      )}
+                    </Button>
                   </div>
                   <div className="rounded-xl bg-background border-4 border-primary/30 overflow-hidden" style={{ height: '650px' }}>
                     <Suspense fallback={

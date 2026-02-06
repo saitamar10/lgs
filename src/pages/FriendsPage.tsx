@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, UserPlus, UserMinus, Search, ArrowLeft, Trophy, Zap, Loader2 } from 'lucide-react';
+import { Users, UserPlus, UserMinus, Search, ArrowLeft, Trophy, Zap, Loader2, MessageCircle } from 'lucide-react';
 import { UserProfileDialog } from '@/components/UserProfileDialog';
 import {
   useFriends,
@@ -17,12 +17,16 @@ import {
   useRemoveFriend,
   getDisplayName
 } from '@/hooks/useFriends';
+import { useGetOrCreateConversation } from '@/hooks/useChat';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface FriendsPageProps {
   onBack: () => void;
+  onOpenChat?: (conversationId: string) => void;
 }
 
-export function FriendsPage({ onBack }: FriendsPageProps) {
+export function FriendsPage({ onBack, onOpenChat }: FriendsPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [showUserProfile, setShowUserProfile] = useState(false);
@@ -37,6 +41,7 @@ export function FriendsPage({ onBack }: FriendsPageProps) {
   const acceptRequest = useAcceptFriendRequest();
   const rejectRequest = useRejectFriendRequest();
   const removeFriend = useRemoveFriend();
+  const getOrCreateConversation = useGetOrCreateConversation();
 
   const handleAddFriend = (userId: string) => {
     sendFriendRequest.mutate(userId);
@@ -53,6 +58,20 @@ export function FriendsPage({ onBack }: FriendsPageProps) {
 
   const handleRejectRequest = (requesterId: string) => {
     rejectRequest.mutate(requesterId);
+  };
+
+  const handleStartChat = async (friendId: string) => {
+    try {
+      const conversationId = await getOrCreateConversation.mutateAsync(friendId);
+      if (onOpenChat) {
+        onOpenChat(conversationId);
+      } else {
+        toast.success('Sohbet açılıyor...');
+      }
+    } catch (error) {
+      console.error('Failed to start chat:', error);
+      toast.error('Sohbet başlatılamadı');
+    }
   };
 
   return (
@@ -196,14 +215,27 @@ export function FriendsPage({ onBack }: FriendsPageProps) {
                           </div>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveFriend(friend.id)}
-                        disabled={removeFriend.isPending}
-                      >
-                        <UserMinus className="w-4 h-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartChat(friend.id);
+                          }}
+                          disabled={getOrCreateConversation.isPending}
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveFriend(friend.id)}
+                          disabled={removeFriend.isPending}
+                        >
+                          <UserMinus className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

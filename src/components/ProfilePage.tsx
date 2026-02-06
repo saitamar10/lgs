@@ -16,6 +16,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { WeakTopicTestDialog } from './WeakTopicTestDialog';
 import { PaywallDialog } from './PaywallDialog';
+import { BadgesSection } from './BadgesSection';
+import { RankSelectionDialog } from './RankSelectionDialog';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
@@ -103,6 +105,7 @@ export function ProfilePage({ onBack, onNavigateToUnit }: ProfilePageProps) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [selectedWeakTopic, setSelectedWeakTopic] = useState<WeakTopic | null>(null);
   const [showWeakTopicTest, setShowWeakTopicTest] = useState(false);
+  const [showRankDialog, setShowRankDialog] = useState(false);
 
   // Memoize expensive calculations
   const isPremium = subscription?.plan_type !== 'free';
@@ -159,8 +162,17 @@ export function ProfilePage({ onBack, onNavigateToUnit }: ProfilePageProps) {
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
-                <div className="flex items-center gap-1 mt-2">
+                <div className="flex items-center gap-2 mt-2">
                   <span className="text-sm font-medium">Seviye {levelInfo.level}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowRankDialog(true)}
+                    className="text-xs h-7 px-2"
+                  >
+                    <Award className="w-3 h-3 mr-1" />
+                    Rütbe Seç
+                  </Button>
                 </div>
               </div>
             </div>
@@ -323,6 +335,9 @@ export function ProfilePage({ onBack, onNavigateToUnit }: ProfilePageProps) {
           </Card>
         )}
 
+        {/* Badges Section */}
+        <BadgesSection />
+
         {/* Weak Topics */}
         <Card>
           <CardHeader className="pb-2">
@@ -452,6 +467,13 @@ export function ProfilePage({ onBack, onNavigateToUnit }: ProfilePageProps) {
       </div>
 
       <PaywallDialog open={showPaywall} onClose={() => setShowPaywall(false)} />
+
+      <RankSelectionDialog
+        open={showRankDialog}
+        onClose={() => setShowRankDialog(false)}
+        userXP={profile?.total_xp || 0}
+        currentRank={null}
+      />
 
       <WeakTopicTestDialog
         open={showWeakTopicTest}

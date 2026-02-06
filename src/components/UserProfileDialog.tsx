@@ -21,6 +21,13 @@ interface UserProfile {
   streak_days: number;
   longest_streak: number;
   plan_type?: string;
+  selected_rank?: string;
+}
+
+interface Rank {
+  name: string;
+  icon: string;
+  color: string;
 }
 
 interface UserBadge {
@@ -71,7 +78,8 @@ export function UserProfileDialog({ open, onClose, userId }: UserProfileDialogPr
           user_id,
           display_name,
           total_xp,
-          streak_days
+          streak_days,
+          selected_rank
         `)
         .eq('user_id', userId)
         .single();
@@ -110,6 +118,24 @@ export function UserProfileDialog({ open, onClose, userId }: UserProfileDialogPr
       return data;
     },
     enabled: open && !!userId
+  });
+
+  // Fetch rank details if user has one
+  const { data: rankDetails } = useQuery({
+    queryKey: ['rank-details', profile?.selected_rank],
+    queryFn: async () => {
+      if (!profile?.selected_rank) return null;
+
+      const { data, error } = await supabase
+        .from('ranks')
+        .select('name, icon, color')
+        .eq('name', profile.selected_rank)
+        .single();
+
+      if (error) throw error;
+      return data as Rank;
+    },
+    enabled: open && !!profile?.selected_rank
   });
 
   // Fetch user badges
@@ -180,8 +206,13 @@ export function UserProfileDialog({ open, onClose, userId }: UserProfileDialogPr
                     </Badge>
                   )}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">Seviye {levelInfo.level}</span>
+                  {rankDetails && (
+                    <Badge variant="outline" className="text-xs">
+                      {rankDetails.icon} {rankDetails.name}
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>

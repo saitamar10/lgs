@@ -53,7 +53,10 @@ export function useCreateStudyPlan() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Immediately update cache with new data
+      queryClient.setQueryData(['study-plan', user?.id], data);
+      // Also invalidate to refetch
       queryClient.invalidateQueries({ queryKey: ['study-plan'] });
     }
   });

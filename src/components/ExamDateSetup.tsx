@@ -27,16 +27,25 @@ export function ExamDateSetup({ totalTopics, onComplete }: ExamDateSetupProps) {
         examDate,
         dailyGoalXp: dailyGoal
       });
+
+      // Save to localStorage as backup
+      localStorage.setItem('study_plan_created', 'true');
+
       toast({
         title: "Plan Oluşturuldu! 🎯",
         description: `${daysRemaining} gün içinde ${totalTopics} konu tamamlanacak.`
       });
-      onComplete();
+
+      // Wait for query to update, then close
+      setTimeout(() => {
+        onComplete();
+      }, 500);
     } catch (error) {
+      console.error('Study plan creation error:', error);
       toast({
         variant: "destructive",
         title: "Hata",
-        description: "Plan oluşturulamadı."
+        description: "Plan oluşturulamadı. Lütfen tekrar deneyin."
       });
     }
   };

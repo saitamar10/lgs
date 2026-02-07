@@ -193,7 +193,11 @@ export function Dashboard() {
   // Show exam setup if no study plan exists
   useEffect(() => {
     if (!studyPlanLoading && !studyPlan && user) {
-      setShowExamSetup(true);
+      // Check localStorage backup to prevent showing setup repeatedly
+      const planCreated = localStorage.getItem('study_plan_created');
+      if (!planCreated) {
+        setShowExamSetup(true);
+      }
     }
   }, [studyPlan, studyPlanLoading, user]);
 

@@ -1,3 +1,19 @@
+# AI Coach Edge Function - Deploy Talimatları
+
+## ⚠️ ÖNEMLİ: Bu kodu Supabase Dashboard'a kopyalayıp yapıştırın
+
+1. https://supabase.com/dashboard → Projenizi açın
+2. Sol menüden **Edge Functions** seçin
+3. **ai-coach** function'ını bulun ve tıklayın
+4. **Deploy new version** butonuna tıklayın
+5. Aşağıdaki kodu TAMAMEN kopyalayıp yapıştırın
+6. **Deploy** butonuna tıklayın
+
+---
+
+## 📋 GÜNCEL KOD (Vision API Desteği ile):
+
+```typescript
 // Edge function for AI Coach - Question Solving Assistant
 
 const corsHeaders = {
@@ -94,7 +110,7 @@ Deno.serve(async (req) => {
       { role: 'user' as const, content: userContent }
     ];
 
-    // Call Lovable AI Gateway with Claude 4.5 Sonnet (best for Turkish + vision)
+    // Call Lovable AI Gateway with vision support
     const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -102,12 +118,12 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'anthropic/claude-3-5-sonnet-20241022', // Claude 3.5 Sonnet with vision
+        model: 'google/gemini-2.0-flash-exp', // Gemini 2.0 with vision support
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           ...messages
         ],
-        max_tokens: 2048,
+        max_tokens: 2000, // Increased for detailed explanations
         temperature: 0.7
       })
     })
@@ -133,3 +149,26 @@ Deno.serve(async (req) => {
     )
   }
 })
+```
+
+---
+
+## ✅ Deploy Sonrası Kontrol:
+
+1. Edge function deploy olduktan sonra (yeşil tik göreceksiniz)
+2. Mobil/web uygulamadan AI Coach'a gidin
+3. Bir matematik sorusu yazın veya soru görseli yükleyin
+4. Artık görseldeki soruyu okuyup adım adım çözüm verecek! 🎉
+
+## 🔑 Farklar (Eski vs Yeni):
+
+| Özellik | Eski Version | Yeni Version |
+|---------|-------------|--------------|
+| Görsel okuma | ❌ Yok | ✅ Var (Vision API) |
+| Model | gemini-3-flash-preview | gemini-2.0-flash-exp |
+| Conversation history | ✅ Database'den çekiyor | ❌ Tek soru modu |
+| imageBase64 parametresi | ❌ Yok | ✅ Var |
+| Max tokens | 1000 | 2000 |
+| Prompt | Genel koç | Soru çözme odaklı |
+
+Deploy ettikten sonra test edin! 🚀

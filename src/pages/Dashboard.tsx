@@ -407,11 +407,38 @@ export function Dashboard() {
       challengedFriendName: challengeFriendName
     });
 
+    setIsGeneratingQuestions(true);
     setCurrentView('quiz');
 
-    // For challenge mode, try to use DB questions instead of AI
-    // This is more reliable and faster
-    console.log('🎮 Challenge mode: Using DB questions');
+    // Generate AI questions for challenge mode
+    const difficultyMap: Record<Difficulty, number> = {
+      'easy': 1,
+      'medium': 2,
+      'hard': 3,
+      'exam': 2
+    };
+
+    try {
+      const questions = await generateQuestions({
+        subjectName,
+        unitName,
+        difficulty: difficultyMap[difficulty as Difficulty],
+        count: 5
+      });
+
+      if (questions.length > 0) {
+        setAiQuestions(questions);
+      } else {
+        toast.error('Sorular üretilemedi');
+        handleBackToDashboard();
+      }
+    } catch (error) {
+      console.error('Failed to generate questions:', error);
+      toast.error('Soru üretiminde hata oluştu');
+      handleBackToDashboard();
+    } finally {
+      setIsGeneratingQuestions(false);
+    }
   };
 
   // Handle accept challenge - starts quiz in challenge mode (accepting existing challenge)
@@ -443,7 +470,39 @@ export function Dashboard() {
       acceptingChallengeId: challengeId
     });
 
+    setIsGeneratingQuestions(true);
     setCurrentView('quiz');
+
+    // Generate AI questions for challenge mode
+    const difficultyMap: Record<Difficulty, number> = {
+      'easy': 1,
+      'medium': 2,
+      'hard': 3,
+      'exam': 2
+    };
+
+    try {
+      const questions = await generateQuestions({
+        subjectName,
+        unitName,
+        difficulty: difficultyMap[difficulty as Difficulty],
+        count: 5
+      });
+
+      if (questions.length > 0) {
+        setAiQuestions(questions);
+      } else {
+        toast.error('Sorular üretilemedi');
+        handleBackToDashboard();
+      }
+    } catch (error) {
+      console.error('Failed to generate questions:', error);
+      toast.error('Soru üretiminde hata oluştu');
+      handleBackToDashboard();
+    } finally {
+      setIsGeneratingQuestions(false);
+    }
+
     console.log('🎮 Challenge accepted, starting quiz');
   };
 
@@ -889,6 +948,10 @@ export function Dashboard() {
             const isChallenger = user?.id === challenge.challenger_id;
             const opponentId = isChallenger ? challenge.challenged_id : challenge.challenger_id;
             const opponentName = isChallenger ? challenge.challenged_name : challenge.challenger_name;
+
+            // Set opponent info for challenge state
+            setChallengeFriendId(opponentId);
+            setChallengeFriendName(opponentName || 'Arkadaş');
 
             // Close results dialog
             setShowChallengeResults(false);

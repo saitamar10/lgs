@@ -1,19 +1,22 @@
-// Edge function for AI Coach
+// Edge function for AI Coach - Question Solving Assistant
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
-const SYSTEM_PROMPT = `Sen LGS (Liselere Geçiş Sınavı) hazırlık koçusun. Türkçe konuşan bir 8. sınıf öğrencisine yardım ediyorsun.
+const SYSTEM_PROMPT = `Sen bir LGS öğretmenisin. Öğrenciye soruyu adım adım, temel seviyeden başlayarak açıkla.
 
-Görevlerin:
-1. Zayıf konuları analiz et ve önerilerde bulun
-2. Günlük çalışma planı oluştur
-3. Soruları detaylı açıkla
-4. Motivasyon sağla
+KURALLARIN:
+1. Her adımı numaralandır ve açıkla
+2. Temel kavramları hatırlat
+3. Formülleri göster
+4. Örnek ver
+5. Nihai cevabı net ver
+6. Öğrenci seviyesinde, basit dil kullan
+7. Markdown formatında yanıt ver (başlıklar, listeler, kalın yazı kullan)
 
-LGS Dersleri:
+LGS Konuları:
 - Türkçe (40 soru)
 - Matematik (20 soru)
 - Fen Bilimleri (20 soru)
@@ -21,11 +24,23 @@ LGS Dersleri:
 - Din Kültürü (10 soru)
 - İngilizce (10 soru)
 
-Yanıtlarını:
-- Kısa ve öz tut
-- Öğrenci seviyesine uygun açıkla
-- Pozitif ve cesaretlendirici ol
-- Türkçe yanıt ver`
+Yanıt Formatı:
+## 📚 Konu
+[Konunun adı]
+
+## 🎯 Adım Adım Çözüm
+
+### Adım 1: [Başlık]
+[Açıklama]
+
+### Adım 2: [Başlık]
+[Açıklama]
+
+## ✅ Nihai Cevap
+[Net cevap]
+
+## 💡 Hatırlatma
+[Önemli not veya tüyo]`
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -33,44 +48,53 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { conversationId, message } = await req.json()
+    const { conversationId, message, imageBase64 } = await req.json()
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
     if (!lovableApiKey) {
       throw new Error('LOVABLE_API_KEY is not set')
     }
 
-    // Get conversation history from Supabase
-    const authHeader = req.headers.get('Authorization')
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    // Build user message content
+    let userContent: any;
 
-    const historyRes = await fetch(
-      `${supabaseUrl}/rest/v1/coach_messages?conversation_id=eq.${conversationId}&order=created_at`,
-      {
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'apikey': supabaseKey!,
-          'Content-Type': 'application/json'
+    if (imageBase64) {
+      // Extract base64 data (remove data:image/xxx;base64, prefix if present)
+      const base64Data = imageBase64.includes(',')
+        ? imageBase64.split(',')[1]
+        : imageBase64;
+
+      // Detect image type from base64 prefix
+      const imageType = imageBase64.includes('image/png')
+        ? 'image/png'
+        : imageBase64.includes('image/jpeg') || imageBase64.includes('image/jpg')
+        ? 'image/jpeg'
+        : 'image/png'; // default
+
+      // Vision mode: send both image and text
+      userContent = [
+        {
+          type: 'image_url',
+          image_url: {
+            url: `data:${imageType};base64,${base64Data}`
+          }
+        },
+        {
+          type: 'text',
+          text: message
         }
-      }
-    )
-
-    const historyData = await historyRes.json()
-    
-    // Ensure history is an array
-    const history = Array.isArray(historyData) ? historyData : []
+      ];
+    } else {
+      // Text-only mode
+      userContent = message;
+    }
 
     // Build messages array
     const messages = [
-      ...history.map((msg: { role: string; content: string }) => ({
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content
-      })),
-      { role: 'user' as const, content: message }
-    ]
+      { role: 'user' as const, content: userContent }
+    ];
 
-    // Call Lovable AI Gateway
+    // Call Lovable AI Gateway with vision support
     const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -78,12 +102,12 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+        model: 'google/gemini-2.0-flash-exp', // Gemini 2.0 with vision support
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           ...messages
         ],
-        max_tokens: 1000,
+        max_tokens: 2000, // Increased for detailed explanations
         temperature: 0.7
       })
     })
@@ -94,7 +118,7 @@ Deno.serve(async (req) => {
     }
 
     const aiData = await aiRes.json()
-    const response = aiData.choices[0]?.message?.content || 'Üzgünüm, bir hata oluştu.'
+    const response = aiData.choices[0]?.message?.content || 'Üzgünüm, sorunuzu çözemedim. Lütfen tekrar deneyin.'
 
     return new Response(
       JSON.stringify({ response }),

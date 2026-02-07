@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, UserPlus, UserMinus, Search, ArrowLeft, Trophy, Zap, Loader2, MessageCircle } from 'lucide-react';
+import { Users, UserPlus, UserMinus, Search, ArrowLeft, Trophy, Zap, Loader2, MessageCircle, Gamepad2, Swords, Target, Timer } from 'lucide-react';
 import { UserProfileDialog } from '@/components/UserProfileDialog';
+import { useAuth } from '@/lib/auth';
 import {
   useFriends,
   useFriendRequests,
@@ -17,6 +18,8 @@ import {
   useRemoveFriend,
   getDisplayName
 } from '@/hooks/useFriends';
+import { usePendingChallenges, useFriendChallenges, useAcceptChallenge, useDeclineChallenge, getChallengeWinner, formatChallengeTime } from '@/hooks/useFriendChallenges';
+import { ChallengeResultsDialog } from '@/components/ChallengeResultsDialog';
 import { useGetOrCreateConversation } from '@/hooks/useChat';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -24,17 +27,38 @@ import { toast } from 'sonner';
 interface FriendsPageProps {
   onBack: () => void;
   onOpenChat?: (conversationId: string) => void;
+  onPlayWithFriend?: (friendId: string, friendName: string) => void;
+  onAcceptChallenge?: (challengeId: string, unitId: string, unitName: string, subjectName: string, difficulty: string) => void;
 }
 
-export function FriendsPage({ onBack, onOpenChat }: FriendsPageProps) {
+export function FriendsPage({ onBack, onOpenChat, onPlayWithFriend, onAcceptChallenge }: FriendsPageProps) {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [showUserProfile, setShowUserProfile] = useState(false);
+  const [selectedChallengeId, setSelectedChallengeId] = useState<string | null>(null);
+  const [showChallengeResults, setShowChallengeResults] = useState(false);
+  const [activeTab, setActiveTab] = useState('friends');
+
+  // Listen for challenge notification clicks to switch to challenges tab
+  useEffect(() => {
+    const handleSwitchToChallengesTab = () => {
+      setActiveTab('challenges');
+    };
+
+    window.addEventListener('switch-to-challenges-tab', handleSwitchToChallengesTab);
+
+    return () => {
+      window.removeEventListener('switch-to-challenges-tab', handleSwitchToChallengesTab);
+    };
+  }, []);
 
   // Fetch data from Supabase
   const { data: friends = [], isLoading: friendsLoading } = useFriends();
   const { data: pendingRequests = [], isLoading: requestsLoading } = useFriendRequests();
   const { data: searchResults = [], isLoading: searchLoading } = useSearchUsers(searchQuery);
+  const { data: pendingChallenges = [] } = usePendingChallenges();
+  const { data: allChallenges = [] } = useFriendChallenges();
 
   // Mutations
   const sendFriendRequest = useSendFriendRequest();
@@ -42,6 +66,8 @@ export function FriendsPage({ onBack, onOpenChat }: FriendsPageProps) {
   const rejectRequest = useRejectFriendRequest();
   const removeFriend = useRemoveFriend();
   const getOrCreateConversation = useGetOrCreateConversation();
+  const acceptChallenge = useAcceptChallenge();
+  const declineChallenge = useDeclineChallenge();
 
   const handleAddFriend = (userId: string) => {
     sendFriendRequest.mutate(userId);
@@ -79,14 +105,32 @@ export function FriendsPage({ onBack, onOpenChat }: FriendsPageProps) {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-card border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={onBack}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <Users className="w-6 h-6 text-success" />
-              <h1 className="text-2xl font-bold">Arkadaşlar</h1>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={onBack}>
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div className="flex items-center gap-2">
+                <Users className="w-6 h-6 text-success" />
+                <h1 className="text-2xl font-bold">Arkadaşlar</h1>
+              </div>
             </div>
+            {pendingChallenges.length > 0 && (
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setActiveTab('challenges')}
+                >
+                  <Swords className="w-4 h-4" />
+                  <span className="hidden sm:inline">Mücadeleler</span>
+                  <Badge variant="destructive" className="ml-1 px-1.5 py-0 text-xs animate-pulse">
+                    {pendingChallenges.length}
+                  </Badge>
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -156,13 +200,21 @@ export function FriendsPage({ onBack, onOpenChat }: FriendsPageProps) {
         </Card>
 
         {/* Friends Tabs */}
-        <Tabs defaultValue="friends" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="friends">
               Arkadaşlarım ({friends.length})
             </TabsTrigger>
             <TabsTrigger value="requests">
               İstekler ({pendingRequests.length})
+            </TabsTrigger>
+            <TabsTrigger value="challenges" className="relative">
+              Mücadeleler
+              {pendingChallenges.length > 0 && (
+                <Badge variant="destructive" className="ml-1 px-1 py-0 text-xs h-4 min-w-4">
+                  {pendingChallenges.length}
+                </Badge>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -218,6 +270,21 @@ export function FriendsPage({ onBack, onOpenChat }: FriendsPageProps) {
                       <div className="flex gap-2">
                         <Button
                           variant="default"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onPlayWithFriend) {
+                              onPlayWithFriend(friend.id, getDisplayName(friend));
+                            } else {
+                              toast.info('Oyun modu yakında aktif olacak!');
+                            }
+                          }}
+                          className="bg-primary hover:bg-primary/90"
+                        >
+                          <Gamepad2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -306,6 +373,195 @@ export function FriendsPage({ onBack, onOpenChat }: FriendsPageProps) {
               ))
             )}
           </TabsContent>
+
+          <TabsContent value="challenges" className="space-y-4 mt-4">
+            {/* Pending Challenges (Received) */}
+            {pendingChallenges.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-muted-foreground px-1">Bekleyen Mücadeleler</h3>
+                {pendingChallenges.map((challenge) => (
+                  <Card key={challenge.id} className="border-yellow-500/50 bg-yellow-500/5">
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                              <Swords className="w-5 h-5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-semibold">{challenge.challenger_name}</p>
+                              <p className="text-sm text-muted-foreground">sana meydan okudu!</p>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="capitalize">{challenge.difficulty}</Badge>
+                        </div>
+
+                        <div className="bg-secondary/50 rounded-lg p-3 text-sm">
+                          <p className="font-medium">{challenge.subject_name} - {challenge.unit_name}</p>
+                          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Target className="w-3 h-3" />
+                              <span>{challenge.challenger_score}/{challenge.challenger_total}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Timer className="w-3 h-3" />
+                              <span>{formatChallengeTime(challenge.challenger_time_seconds)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => {
+                              if (onAcceptChallenge) {
+                                onAcceptChallenge(
+                                  challenge.id,
+                                  challenge.unit_id,
+                                  challenge.unit_name,
+                                  challenge.subject_name,
+                                  challenge.difficulty
+                                );
+                              } else {
+                                toast.error('Challenge sistemi yüklenemedi');
+                              }
+                            }}
+                          >
+                            <Gamepad2 className="w-4 h-4 mr-1" />
+                            Oyna
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => declineChallenge.mutate(challenge.id)}
+                            disabled={declineChallenge.isPending}
+                          >
+                            Reddet
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Ongoing Challenges (Sent, waiting for opponent) */}
+            {allChallenges.filter(c => c.status === 'pending' && c.challenger_id === c.id).length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-muted-foreground px-1">Devam Eden</h3>
+                {allChallenges
+                  .filter(c => c.status === 'pending')
+                  .map((challenge) => (
+                    <Card key={challenge.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                            </div>
+                            <div>
+                              <p className="font-semibold">{challenge.challenged_name}</p>
+                              <p className="text-sm text-muted-foreground">{challenge.subject_name} - {challenge.unit_name}</p>
+                            </div>
+                          </div>
+                          <Badge variant="secondary">Bekliyor...</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
+            )}
+
+            {/* Completed Challenges */}
+            {allChallenges.filter(c => c.status === 'completed').slice(0, 10).length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-muted-foreground px-1">Tamamlanan (Son 10)</h3>
+                {allChallenges
+                  .filter(c => c.status === 'completed')
+                  .slice(0, 10)
+                  .map((challenge) => {
+                    const winner = getChallengeWinner(challenge);
+
+                    // Determine if current user is challenger or challenged
+                    const isChallenger = user?.id === challenge.challenger_id;
+
+                    // Get opponent info and scores based on user's role
+                    const opponentName = isChallenger ? challenge.challenged_name : challenge.challenger_name;
+                    const myScore = isChallenger ? challenge.challenger_score : challenge.challenged_score;
+                    const myTotal = isChallenger ? challenge.challenger_total : challenge.challenged_total;
+                    const opponentScore = isChallenger ? challenge.challenged_score : challenge.challenger_score;
+                    const opponentTotal = isChallenger ? challenge.challenged_total : challenge.challenger_total;
+
+                    // Determine if I won
+                    const didIWin = (isChallenger && winner === 'challenger') || (!isChallenger && winner === 'challenged');
+                    const isTie = winner === 'tie';
+
+                    return (
+                      <Card key={challenge.id}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 flex-1">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                isTie ? 'bg-blue-500/20' :
+                                didIWin ? 'bg-green-500/20' :
+                                'bg-red-500/20'
+                              }`}>
+                                {isTie ? (
+                                  <Target className="w-5 h-5 text-blue-500" />
+                                ) : didIWin ? (
+                                  <Trophy className="w-5 h-5 text-green-500" />
+                                ) : (
+                                  <Trophy className="w-5 h-5 text-red-500" />
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-semibold">{opponentName}</p>
+                                <p className="text-sm text-muted-foreground">{challenge.subject_name} - {challenge.unit_name}</p>
+                                <div className="mt-1 text-sm">
+                                  <span className="font-medium">{opponentScore || 0} - {myScore || 0}</span>
+                                  <span className={`ml-2 ${
+                                    isTie ? 'text-blue-600' :
+                                    didIWin ? 'text-green-600' :
+                                    'text-red-600'
+                                  }`}>
+                                    {isTie ? 'Berabere' : didIWin ? 'Yendin!' : 'Seni Yendi'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedChallengeId(challenge.id);
+                                setShowChallengeResults(true);
+                              }}
+                            >
+                              Sonuçlar
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+              </div>
+            )}
+
+            {/* Empty State */}
+            {pendingChallenges.length === 0 && allChallenges.filter(c => c.status === 'completed').length === 0 && (
+              <Card>
+                <CardContent className="py-12">
+                  <div className="text-center text-muted-foreground">
+                    <Swords className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Henüz meydan okuman yok</p>
+                    <p className="text-sm mt-2">Arkadaşlarına meydan oku ve yarışmaya başla!</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
         </Tabs>
 
         {/* Info Card */}
@@ -333,6 +589,27 @@ export function FriendsPage({ onBack, onOpenChat }: FriendsPageProps) {
             setSelectedUserId(null);
           }}
           userId={selectedUserId}
+        />
+      )}
+
+      {/* Challenge Results Dialog */}
+      {selectedChallengeId && (
+        <ChallengeResultsDialog
+          open={showChallengeResults}
+          onClose={() => {
+            setShowChallengeResults(false);
+            setSelectedChallengeId(null);
+          }}
+          challenge={allChallenges.find(c => c.id === selectedChallengeId)!}
+          currentUserId={allChallenges.find(c => c.id === selectedChallengeId)?.challenged_id || ''}
+          onRematch={() => {
+            // Will be implemented in ADIM 6
+            toast.info('Rövanş özelliği yakında eklenecek!');
+          }}
+          onPlayAgain={() => {
+            // Will be implemented in ADIM 6
+            toast.info('Tekrar oyna özelliği yakında eklenecek!');
+          }}
         />
       )}
     </div>

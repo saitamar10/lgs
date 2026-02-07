@@ -163,7 +163,15 @@ export function useSendMessage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ conversationId, content }: { conversationId: string; content: string }) => {
+    mutationFn: async ({
+      conversationId,
+      content,
+      imageBase64
+    }: {
+      conversationId: string;
+      content: string;
+      imageBase64?: string;
+    }) => {
       // Save user message
       const { error: userMsgError } = await supabase
         .from('coach_messages')
@@ -171,9 +179,13 @@ export function useSendMessage() {
 
       if (userMsgError) throw userMsgError;
 
-      // Call AI edge function
+      // Call AI edge function with optional image
       const { data: aiResponse, error: aiError } = await supabase.functions.invoke('ai-coach', {
-        body: { conversationId, message: content }
+        body: {
+          conversationId,
+          message: content,
+          imageBase64: imageBase64 || undefined
+        }
       });
 
       if (aiError) throw aiError;
@@ -181,10 +193,10 @@ export function useSendMessage() {
       // Save AI response
       const { error: aiMsgError } = await supabase
         .from('coach_messages')
-        .insert({ 
-          conversation_id: conversationId, 
-          role: 'assistant', 
-          content: aiResponse.response 
+        .insert({
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: aiResponse.response
         });
 
       if (aiMsgError) throw aiMsgError;
@@ -218,6 +230,30 @@ export function useDeleteConversation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['coach-conversations'] });
+    }
+  });
+}
+
+// Single question mode - no DB save, just AI call
+export function useSendQuestionOnly() {
+  return useMutation({
+    mutationFn: async ({
+      content,
+      imageBase64
+    }: {
+      content: string;
+      imageBase64?: string;
+    }) => {
+      // Call AI edge function directly without saving to DB
+      const { data: aiResponse, error: aiError } = await supabase.functions.invoke('ai-coach', {
+        body: {
+          message: content,
+          imageBase64: imageBase64 || undefined
+        }
+      });
+
+      if (aiError) throw aiError;
+      return aiResponse.response;
     }
   });
 }

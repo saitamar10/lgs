@@ -12,6 +12,10 @@ import { useStreak } from '@/hooks/useStreak';
 import { useUpdateTaskProgress, useDailyTasks } from '@/hooks/useDailyTasks';
 import { useDailyRecommendation } from '@/hooks/useDailyRecommendation';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useCreateChallenge, useAcceptChallenge, useCompleteChallenge, useFriendChallenges, ChallengeDifficulty } from '@/hooks/useFriendChallenges';
+import { useChallengeNotifications } from '@/hooks/useChallengeNotifications';
+import { ChallengeDialog } from '@/components/ChallengeDialog';
+import { ChallengeResultsDialog } from '@/components/ChallengeResultsDialog';
 import { Sidebar } from '@/components/Sidebar';
 import { MobileHeader } from '@/components/MobileHeader';
 import { RightPanel } from '@/components/RightPanel';
@@ -46,6 +50,10 @@ interface QuizState {
   unitName: string;
   subjectName: string;
   difficulty: Difficulty;
+  challengeMode?: boolean;
+  challengedFriendId?: string;
+  challengedFriendName?: string;
+  acceptingChallengeId?: string;
 }
 
 interface LessonState {
@@ -78,6 +86,14 @@ export function Dashboard() {
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   const [lessonSlides, setLessonSlides] = useState<LessonSlide[]>([]);
   const [isGeneratingLesson, setIsGeneratingLesson] = useState(false);
+  const [showChallengeDialog, setShowChallengeDialog] = useState(false);
+  const [challengeFriendId, setChallengeFriendId] = useState<string>('');
+  const [challengeFriendName, setChallengeFriendName] = useState<string>('');
+  const [completedChallengeId, setCompletedChallengeId] = useState<string | null>(null);
+  const [showChallengeResults, setShowChallengeResults] = useState(false);
+
+  // Enable challenge notifications
+  useChallengeNotifications();
 
   // Request notification permission on first load
   useEffect(() => {
@@ -86,17 +102,38 @@ export function Dashboard() {
     }
   }, [user, permission, requestPermission]);
 
+  // Listen for challenge notification clicks to navigate to challenges tab
+  useEffect(() => {
+    const handleNavigateToChallenges = () => {
+      setCurrentView('friends');
+      // Small delay to ensure FriendsPage is mounted, then trigger tab change
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('switch-to-challenges-tab'));
+      }, 100);
+    };
+
+    window.addEventListener('navigate-to-challenges', handleNavigateToChallenges);
+
+    return () => {
+      window.removeEventListener('navigate-to-challenges', handleNavigateToChallenges);
+    };
+  }, []);
+
   const { data: subjects, isLoading: subjectsLoading } = useSubjects();
   const { data: units, isLoading: unitsLoading } = useUnits(selectedSubject?.id);
   const { data: questions, isLoading: questionsLoading } = useQuestions(quizState?.unitId);
   const { data: studyPlan, isLoading: studyPlanLoading } = useStudyPlan();
   const { data: allProgress } = useAllStageProgress();
   const { data: dailyTasks } = useDailyTasks();
+  const { data: allChallenges = [] } = useFriendChallenges();
   const submitResult = useSubmitStageResult();
   const updateTaskProgress = useUpdateTaskProgress();
   const { generateQuestions } = useAIQuestions();
   const { generateLesson } = useLesson();
   const dailyRecommendation = useDailyRecommendation();
+  const createChallenge = useCreateChallenge();
+  const acceptChallenge = useAcceptChallenge();
+  const completeChallenge = useCompleteChallenge();
 
   const { data: subscription } = useSubscription();
   const { checkIn, currentStreak, longestStreak } = useStreak();
@@ -213,15 +250,57 @@ export function Dashboard() {
     }
   };
 
-  const handleQuizComplete = async (score: number, total: number, xp: number) => {
+  const handleQuizComplete = async (score: number, total: number, xp: number, timeSeconds?: number) => {
     // Use 1 heart when completing a stage (if not premium)
     if (!isPremium) {
       useHeart();
     }
-    
+
     setQuizResult({ score, total, xp });
-    
+
     if (quizState) {
+      // If accepting a challenge, complete it and show results
+      if (quizState.challengeMode && quizState.acceptingChallengeId) {
+        await completeChallenge.mutateAsync({
+          challengeId: quizState.acceptingChallengeId,
+          score,
+          total,
+          timeSeconds: 0  // Süre önemsiz, 0 gönder
+        });
+
+        // Show challenge results dialog
+        setCompletedChallengeId(quizState.acceptingChallengeId);
+        setShowChallengeResults(true);
+        setQuizState(null);
+        setQuizResult(null);
+        setAiQuestions([]);
+        return;
+      }
+
+      // If creating a new challenge, save it
+      if (quizState.challengeMode && quizState.challengedFriendId) {
+        await createChallenge.mutateAsync({
+          challengedId: quizState.challengedFriendId,
+          unitId: quizState.unitId,
+          unitName: quizState.unitName,
+          subjectName: quizState.subjectName,
+          difficulty: quizState.difficulty as ChallengeDifficulty,
+          score,
+          total,
+          timeSeconds: 0  // Süre önemsiz, 0 gönder
+        });
+
+        toast.success(`Meydan okuman ${quizState.challengedFriendName}'e gönderildi!`);
+
+        // Return to friends page after challenge
+        setCurrentView('friends');
+        setQuizState(null);
+        setQuizResult(null);
+        setAiQuestions([]);
+        return;
+      }
+
+      // Normal quiz flow
       await submitResult.mutateAsync({
         unitId: quizState.unitId,
         difficulty: quizState.difficulty,
@@ -242,7 +321,7 @@ export function Dashboard() {
         updateTaskProgress.mutate({ taskId: correctTask.id, increment: 1 });
       }
     }
-    
+
     setCurrentView('complete');
   };
 
@@ -284,6 +363,84 @@ export function Dashboard() {
 
   const handleNavigate = (view: 'dashboard' | 'leaderboard' | 'profile' | 'coach' | 'vocabulary' | 'mock-exam' | 'todays-plan' | 'friends' | 'subscription') => {
     setCurrentView(view);
+  };
+
+  // Handle play with friend - opens challenge dialog
+  const handlePlayWithFriend = (friendId: string, friendName: string) => {
+    console.log('🎮 Challenge button clicked!', { friendId, friendName });
+    setChallengeFriendId(friendId);
+    setChallengeFriendName(friendName);
+    setShowChallengeDialog(true);
+    console.log('🎮 Dialog state set to true');
+  };
+
+  // Handle start challenge - starts quiz in challenge mode (creating new challenge)
+  const handleStartChallenge = async (
+    unitId: string,
+    unitName: string,
+    subjectName: string,
+    difficulty: ChallengeDifficulty
+  ) => {
+    console.log('🎮 Starting challenge...', { unitId, unitName, subjectName, difficulty });
+
+    // Premium users have unlimited hearts
+    if (!isPremium && !hasHearts) {
+      setShowNoHeartsDialog(true);
+      return;
+    }
+
+    // Close challenge dialog
+    setShowChallengeDialog(false);
+
+    // Set quiz state with challenge mode
+    setQuizState({
+      unitId,
+      unitName,
+      subjectName,
+      difficulty: difficulty as Difficulty,
+      challengeMode: true,
+      challengedFriendId: challengeFriendId,
+      challengedFriendName: challengeFriendName
+    });
+
+    setCurrentView('quiz');
+
+    // For challenge mode, try to use DB questions instead of AI
+    // This is more reliable and faster
+    console.log('🎮 Challenge mode: Using DB questions');
+  };
+
+  // Handle accept challenge - starts quiz in challenge mode (accepting existing challenge)
+  const handleAcceptChallenge = async (
+    challengeId: string,
+    unitId: string,
+    unitName: string,
+    subjectName: string,
+    difficulty: string
+  ) => {
+    console.log('🎮 Accepting challenge...', { challengeId, unitId, unitName, subjectName, difficulty });
+
+    // Premium users have unlimited hearts
+    if (!isPremium && !hasHearts) {
+      setShowNoHeartsDialog(true);
+      return;
+    }
+
+    // Mark challenge as accepted
+    await acceptChallenge.mutateAsync(challengeId);
+
+    // Set quiz state with challenge acceptance mode
+    setQuizState({
+      unitId,
+      unitName,
+      subjectName,
+      difficulty: difficulty as Difficulty,
+      challengeMode: true,
+      acceptingChallengeId: challengeId
+    });
+
+    setCurrentView('quiz');
+    console.log('🎮 Challenge accepted, starting quiz');
   };
 
   // Get difficulty label for quiz screen
@@ -374,6 +531,7 @@ export function Dashboard() {
             // Navigate to lesson for this unit
             handleStartLesson(quizState.unitId, quizState.unitName);
           }}
+          challengeMode={quizState.challengeMode}
         />
       );
     }
@@ -427,7 +585,28 @@ export function Dashboard() {
 
   // Friends view
   if (currentView === 'friends') {
-    return <FriendsPage onBack={() => setCurrentView('dashboard')} />;
+    return (
+      <>
+        <FriendsPage
+          onBack={() => setCurrentView('dashboard')}
+          onPlayWithFriend={handlePlayWithFriend}
+          onAcceptChallenge={handleAcceptChallenge}
+        />
+
+        {/* Challenge Dialog */}
+        <ChallengeDialog
+          open={showChallengeDialog}
+          onClose={() => {
+            setShowChallengeDialog(false);
+            setChallengeFriendId('');
+            setChallengeFriendName('');
+          }}
+          friendId={challengeFriendId}
+          friendName={challengeFriendName}
+          onStartChallenge={handleStartChallenge}
+        />
+      </>
+    );
   }
 
   // Subscription view
@@ -653,6 +832,74 @@ export function Dashboard() {
 
       {/* Desktop Chat Widget (Facebook-style) & Mobile Chat Button */}
       <DesktopChatWidget onOpenMobileChat={() => setCurrentView('chat')} />
+
+      {/* Challenge Dialog */}
+      <ChallengeDialog
+        open={showChallengeDialog}
+        onClose={() => {
+          setShowChallengeDialog(false);
+          setChallengeFriendId('');
+          setChallengeFriendName('');
+        }}
+        friendId={challengeFriendId}
+        friendName={challengeFriendName}
+        onStartChallenge={handleStartChallenge}
+      />
+
+      {/* Challenge Results Dialog */}
+      {completedChallengeId && (
+        <ChallengeResultsDialog
+          open={showChallengeResults}
+          onClose={() => {
+            setShowChallengeResults(false);
+            setCompletedChallengeId(null);
+            setCurrentView('friends');
+          }}
+          challenge={allChallenges.find(c => c.id === completedChallengeId)!}
+          currentUserId={user?.id || ''}
+          onRematch={() => {
+            // Find the challenge to get opponent info
+            const challenge = allChallenges.find(c => c.id === completedChallengeId);
+            if (!challenge) return;
+
+            // Determine opponent ID and name
+            const isChallenger = user?.id === challenge.challenger_id;
+            const opponentId = isChallenger ? challenge.challenged_id : challenge.challenger_id;
+            const opponentName = isChallenger ? challenge.challenged_name : challenge.challenger_name;
+
+            // Close results dialog
+            setShowChallengeResults(false);
+            setCompletedChallengeId(null);
+
+            // Open challenge dialog for rematch
+            setChallengeFriendId(opponentId);
+            setChallengeFriendName(opponentName || 'Arkadaş');
+            setShowChallengeDialog(true);
+          }}
+          onPlayAgain={() => {
+            // Find the challenge to replay same unit
+            const challenge = allChallenges.find(c => c.id === completedChallengeId);
+            if (!challenge) return;
+
+            // Determine opponent ID and name
+            const isChallenger = user?.id === challenge.challenger_id;
+            const opponentId = isChallenger ? challenge.challenged_id : challenge.challenger_id;
+            const opponentName = isChallenger ? challenge.challenged_name : challenge.challenger_name;
+
+            // Close results dialog
+            setShowChallengeResults(false);
+            setCompletedChallengeId(null);
+
+            // Start same challenge again
+            handleStartChallenge(
+              challenge.unit_id,
+              challenge.unit_name,
+              challenge.subject_name,
+              challenge.difficulty
+            );
+          }}
+        />
+      )}
     </div>
   );
 }

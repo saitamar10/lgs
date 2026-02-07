@@ -18,22 +18,24 @@ interface QuizScreenProps {
   subjectName: string;
   currentHearts: number;
   maxHearts: number;
-  onComplete: (score: number, totalQuestions: number, xpEarned: number) => void;
+  onComplete: (score: number, totalQuestions: number, xpEarned: number, timeSeconds?: number) => void;
   onExit: () => void;
   onGoToLesson?: () => void;
+  challengeMode?: boolean;
 }
 
-export function QuizScreen({ 
-  questions, 
+export function QuizScreen({
+  questions,
   unitId,
-  unitName, 
+  unitName,
   subjectId,
   subjectName,
   currentHearts,
   maxHearts,
-  onComplete, 
+  onComplete,
   onExit,
-  onGoToLesson
+  onGoToLesson,
+  challengeMode = false
 }: QuizScreenProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -43,12 +45,13 @@ export function QuizScreen({
   const [totalXP, setTotalXP] = useState(0);
   const [timeElapsed, setTimeElapsed] = useState(0); // Kronometre - ileri sayım
   const [stopwatchActive, setStopwatchActive] = useState(true);
-  
+  const [startTime] = useState<number>(Date.now()); // Challenge start time
+
   // Track mistakes per question for weak topic detection
   const [questionMistakes, setQuestionMistakes] = useState<Map<string, number>>(new Map());
   const [showWeakTopicDialog, setShowWeakTopicDialog] = useState(false);
   const [weakTopicAdded, setWeakTopicAdded] = useState(false);
-  
+
   const addWeakTopic = useAddWeakTopic();
 
   // Question queue - wrong answers get pushed to end
@@ -79,13 +82,13 @@ export function QuizScreen({
 
   const handleCheck = () => {
     if (selectedAnswer === null) return;
-    
+
     // Store the current question for display during result phase
     setDisplayedQuestion(currentQuestion);
-    
+
     // Calculate isCorrect at the moment of check with current values
     const isAnswerCorrect = selectedAnswer === currentQuestion.correct_answer;
-    
+
     setShowResult(true);
     setLastAnswerWasCorrect(isAnswerCorrect);
 
@@ -100,7 +103,16 @@ export function QuizScreen({
         setStopwatchActive(false); // Stop stopwatch on correct answer
       }
     } else {
-      // Track mistakes for weak topic detection
+      // CHALLENGE MODE: End quiz immediately on first wrong answer
+      if (challengeMode) {
+        setStopwatchActive(false);
+        const timeSeconds = Math.floor((Date.now() - startTime) / 1000);
+        // End quiz with current correct count (total = correct count in challenge mode)
+        onComplete(correctCount, correctCount, totalXP, timeSeconds);
+        return;
+      }
+
+      // NORMAL MODE: Track mistakes for weak topic detection
       const newMistakes = new Map(questionMistakes);
       const currentMistakeCount = (newMistakes.get(currentQuestion.id) || 0) + 1;
       newMistakes.set(currentQuestion.id, currentMistakeCount);
@@ -147,7 +159,9 @@ export function QuizScreen({
 
       // Check if quiz is complete (all unique questions answered)
       if (answeredCorrectly.size === questions.length || questionQueue.length === 1) {
-        onComplete(correctCount, questions.length, totalXP);
+        // Calculate time taken if in challenge mode
+        const timeSeconds = challengeMode ? Math.floor((Date.now() - startTime) / 1000) : undefined;
+        onComplete(correctCount, questions.length, totalXP, timeSeconds);
         return;
       }
 

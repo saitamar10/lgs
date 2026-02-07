@@ -1,32 +1,19 @@
-import { useState, useRef, useEffect } from 'react';
-import { 
-  useCoachConversations, 
-  useCoachMessages, 
-  useCreateConversation, 
-  useSendMessage,
-  useDeleteConversation,
-  useCoachMessageLimit
-} from '@/hooks/useCoach';
+import { useState, useRef } from 'react';
+import { useSendQuestionOnly, useCoachMessageLimit } from '@/hooks/useCoach';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useProfile } from '@/hooks/useLeaderboard';
-import { useAllStageProgress } from '@/hooks/useStageProgress';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Bot, 
-  Send, 
-  Plus, 
-  Trash2, 
-  Loader2, 
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Bot,
   ArrowLeft,
-  Sparkles,
-  BookOpen,
-  Target,
-  TrendingUp,
-  Crown
+  Crown,
+  Upload,
+  X,
+  Send,
+  Loader2,
+  Image as ImageIcon
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 import { Mascot } from '@/components/Mascot';
@@ -35,266 +22,323 @@ interface AICoachViewProps {
   onBack: () => void;
 }
 
-const quickPrompts = [
-  { icon: <Target className="w-4 h-4" />, text: "Zayıf konularımı analiz et" },
-  { icon: <BookOpen className="w-4 h-4" />, text: "Bugün ne çalışmalıyım?" },
-  { icon: <TrendingUp className="w-4 h-4" />, text: "LGS için strateji öner" },
-];
-
 export function AICoachView({ onBack }: AICoachViewProps) {
-  const { data: conversations, isLoading: convsLoading } = useCoachConversations();
-  const createConversation = useCreateConversation();
-  const deleteConversation = useDeleteConversation();
-  const sendMessage = useSendMessage();
-  const { data: profile } = useProfile();
-  const { data: allProgress } = useAllStageProgress();
+  const sendQuestionOnly = useSendQuestionOnly();
   const { data: subscription } = useSubscription();
   const { canSendMessage, remainingMessages, dailyLimit, incrementMessageCount } = useCoachMessageLimit();
 
   const isPremium = subscription?.plan_type !== 'free';
 
-  const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
-  const [message, setMessage] = useState('');
+  const [questionText, setQuestionText] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
-  const { data: messages, isLoading: msgsLoading } = useCoachMessages(selectedConvId);
-
-  // Auto-scroll to bottom
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const handleNewConversation = async () => {
-    try {
-      const conv = await createConversation.mutateAsync('Yeni Sohbet');
-      setSelectedConvId(conv.id);
-    } catch (error) {
-      console.error('Failed to create conversation:', error);
-    }
-  };
-
-  const handleSendMessage = async (text?: string) => {
-    const messageToSend = text || message;
-    if (!messageToSend.trim() || !selectedConvId) return;
-
-    // Check message limit for free users
-    if (!isPremium && !canSendMessage) {
-      toast.error(`Günlük mesaj limitine ulaştınız (${dailyLimit}/${dailyLimit}). Plus'a yükselt!`);
+  // Handle image selection
+  const handleImageSelect = (file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Görsel 5MB\'dan küçük olmalı');
       return;
     }
 
-    setMessage('');
+    if (!file.type.startsWith('image/')) {
+      toast.error('Lütfen sadece görsel dosyası yükleyin');
+      return;
+    }
+
+    setSelectedImage(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageSelect(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Handle drag and drop
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      handleImageSelect(file);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!questionText.trim() && !selectedImage) {
+      toast.error('Lütfen soru yazın veya görsel yükleyin');
+      return;
+    }
+
+    // Check message limit for free users
+    if (!isPremium && !canSendMessage) {
+      toast.error(`Günlük soru limitine ulaştınız (${dailyLimit}/${dailyLimit}). Plus'a yükselt!`);
+      return;
+    }
+
     setIsSending(true);
+    setAiResponse(null);
 
     try {
-      // Add context about user's progress
-      let contextMessage = messageToSend;
-      if (messageToSend.includes('zayıf') || messageToSend.includes('analiz')) {
-        const progressSummary = allProgress?.slice(0, 5).map(p => 
-          `Ünite: ${p.unit_id}, Kolay: ${p.easy_completions}/3, Orta: ${p.medium_completions}/3`
-        ).join('\n');
-        contextMessage = `${messageToSend}\n\nKullanıcı istatistikleri:\n- Toplam XP: ${profile?.total_xp || 0}\n- Seri: ${profile?.streak_days || 0} gün\n\nİlerleme:\n${progressSummary || 'Henüz ilerleme yok'}`;
-      }
+      // Create enhanced prompt for question solving
+      const userQuestion = questionText.trim() || 'Görseldeki soruyu çöz ve detaylı açıkla';
 
-      await sendMessage.mutateAsync({ 
-        conversationId: selectedConvId, 
-        content: contextMessage 
+      const systemPrompt = `Sen bir LGS öğretmenisin. Öğrenciye soruyu adım adım, temel seviyeden başlayarak açıkla.
+
+KURALLARIN:
+1. Her adımı numaralandır ve açıkla
+2. Temel kavramları hatırlat
+3. Formülleri göster
+4. Örnek ver
+5. Nihai cevabı net ver
+6. Öğrenci seviyesinde, basit dil kullan
+
+${imagePreview ? 'ÖNEMLİ: Öğrenci soru görseli gönderdi. Görseldeki soruyu OKU, ANALİZ ET ve ADIM ADIM ÇÖZ.' : ''}
+
+Öğrenci sorusu: ${userQuestion}`;
+
+      const response = await sendQuestionOnly.mutateAsync({
+        content: systemPrompt,
+        imageBase64: imagePreview || undefined
       });
+
+      setAiResponse(response);
 
       // Increment message count for free users
       if (!isPremium) {
         await incrementMessageCount.mutateAsync();
       }
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      toast.error('Mesaj gönderilemedi. Tekrar deneyin.');
+
+      // Clear form
+      setQuestionText('');
+      handleRemoveImage();
+    } catch (error: any) {
+      console.error('Failed to send question:', error);
+      toast.error(error.message || 'Soru gönderilemedi. Tekrar deneyin.');
     } finally {
       setIsSending(false);
     }
   };
 
-  const handleDeleteConversation = async (convId: string) => {
-    try {
-      await deleteConversation.mutateAsync(convId);
-      if (selectedConvId === convId) {
-        setSelectedConvId(null);
-      }
-    } catch (error) {
-      console.error('Failed to delete conversation:', error);
-    }
-  };
-
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-border">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
-            <Bot className="w-6 h-6 text-primary-foreground" />
+      <div className="sticky top-0 z-10 bg-card border-b border-border">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={onBack}>
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
+                  <Bot className="w-6 h-6 text-primary-foreground" />
+                </div>
+                <div>
+                  <h2 className="font-bold">AI Soru Çözme Asistanı</h2>
+                  <p className="text-xs text-muted-foreground">Adım adım açıklama</p>
+                </div>
+              </div>
+            </div>
+            {!isPremium && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">
+                  Kalan: <span className="font-bold text-foreground">{remainingMessages}/{dailyLimit}</span>
+                </span>
+              </div>
+            )}
           </div>
-          <div>
-            <h2 className="font-bold">LGS Koç</h2>
-            <p className="text-xs text-muted-foreground">AI destekli özel ders</p>
-          </div>
-        </div>
-        <div className="ml-auto">
-          <Button variant="outline" size="sm" onClick={handleNewConversation}>
-            <Plus className="w-4 h-4 mr-1" />
-            Yeni Sohbet
-          </Button>
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Chat Area - No sidebar */}
-        <div className="flex-1 flex flex-col">
-          {!selectedConvId ? (
-            // Welcome Screen
-            <div className="flex-1 flex flex-col items-center justify-center p-8">
-              <Mascot 
-                size="xl" 
-                mood="happy" 
-                message="Merhaba! LGS yolculuğunda sana yardımcı olmak için buradayım! 🎓"
-                animate
-              />
-              <h3 className="text-2xl font-bold mb-2 mt-6">LGS Koçunuz</h3>
-              <p className="text-muted-foreground text-center mb-8 max-w-md">
-                Zayıf konularını analiz eder, günlük çalışma planı oluşturur ve 
-                soruları detaylı açıklar.
-              </p>
-              <Button onClick={handleNewConversation} size="lg">
-                <Plus className="w-5 h-5 mr-2" />
-                Sohbete Başla
-              </Button>
-            </div>
-          ) : (
-            <>
-              {/* Messages */}
-              <ScrollArea className="flex-1 p-4">
-                {msgsLoading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                  </div>
-                ) : messages?.length === 0 ? (
-                  <div className="space-y-4">
-                    <div className="flex gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center flex-shrink-0">
-                        <Bot className="w-5 h-5 text-primary-foreground" />
-                      </div>
-                      <div className="bg-muted rounded-lg p-4 max-w-[80%]">
-                        <p>Merhaba! Ben senin LGS koçunum. 🎓</p>
-                        <p className="mt-2">Sana nasıl yardımcı olabilirim?</p>
-                      </div>
+      <div className="max-w-4xl mx-auto p-4 space-y-6">
+        {/* Welcome Message */}
+        {!aiResponse && (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <Mascot size="lg" mood="happy" />
+                <div>
+                  <h3 className="font-bold text-lg mb-2">👋 Merhaba! Ben AI Öğretmenim</h3>
+                  <p className="text-muted-foreground mb-3">
+                    Sorunuzu 2 şekilde sorabilirsiniz:
+                  </p>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-start gap-2">
+                      <span className="font-bold text-primary">1.</span>
+                      <span>📝 Aşağıdaki alana sorunuzu yazın</span>
                     </div>
-                    <div className="flex flex-wrap gap-2 ml-11">
-                      {quickPrompts.map((prompt, i) => (
-                        <Button
-                          key={i}
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleSendMessage(prompt.text)}
-                          className="text-xs"
-                        >
-                          {prompt.icon}
-                          <span className="ml-1">{prompt.text}</span>
-                        </Button>
-                      ))}
+                    <div className="flex items-start gap-2">
+                      <span className="font-bold text-primary">2.</span>
+                      <span>📸 Soru görselini yükleyin (sürükle-bırak veya tıkla)</span>
                     </div>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {messages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={cn(
-                          "flex gap-3",
-                          msg.role === 'user' && "flex-row-reverse"
-                        )}
-                      >
-                        <div className={cn(
-                          "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-                          msg.role === 'assistant' 
-                            ? "bg-gradient-to-br from-primary to-accent" 
-                            : "bg-secondary"
-                        )}>
-                          {msg.role === 'assistant' ? (
-                            <Bot className="w-5 h-5 text-primary-foreground" />
-                          ) : (
-                            <span className="text-sm">👤</span>
-                          )}
-                        </div>
-                        <div className={cn(
-                          "rounded-lg p-4 max-w-[80%]",
-                          msg.role === 'assistant' ? "bg-muted" : "bg-primary text-primary-foreground"
-                        )}>
-                          {msg.role === 'assistant' ? (
-                            <div className="prose prose-sm dark:prose-invert max-w-none">
-                              <ReactMarkdown>{msg.content}</ReactMarkdown>
-                            </div>
-                          ) : (
-                            <p>{msg.content}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    {isSending && (
-                      <div className="flex gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
-                          <Bot className="w-5 h-5 text-primary-foreground" />
-                        </div>
-                        <div className="bg-muted rounded-lg p-4">
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                        </div>
-                      </div>
-                    )}
-                    <div ref={messagesEndRef} />
-                  </div>
-                )}
-              </ScrollArea>
-
-              {/* Input */}
-              <div className="p-4 border-t border-border">
-                {/* Message Limit Banner for Free Users */}
-                {!isPremium && (
-                  <div className="mb-3 flex items-center justify-between bg-muted/50 rounded-lg p-2 text-sm">
-                    <span className="text-muted-foreground">
-                      Günlük mesaj: <span className="font-bold text-foreground">{remainingMessages}/{dailyLimit}</span>
-                    </span>
-                    <Button variant="ghost" size="sm" className="text-warning h-7">
-                      <Crown className="w-3 h-3 mr-1" />
-                      Sınırsız için Plus
-                    </Button>
-                  </div>
-                )}
-                <form 
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }}
-                  className="flex gap-2"
-                >
-                  <Input
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder={!isPremium && !canSendMessage ? "Günlük limit doldu" : "Mesaj yaz..."}
-                    disabled={isSending || (!isPremium && !canSendMessage)}
-                    className="flex-1"
-                  />
-                  <Button 
-                    type="submit" 
-                    disabled={!message.trim() || isSending || (!isPremium && !canSendMessage)}
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </form>
+                  <p className="text-sm text-primary font-medium mt-3">
+                    Temel kavramlardan başlayarak adım adım açıklayacağım! 🎓
+                  </p>
+                </div>
               </div>
-            </>
-          )}
-        </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Question Input Form */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Sorunuzu Yazın</CardTitle>
+            <CardDescription>
+              Sorunuzu detaylı yazın veya aşağıya soru görselini yükleyin
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Text Input */}
+            <Textarea
+              placeholder="Örnek: x² + 5x + 6 = 0 denklemini çöz&#10;&#10;veya&#10;&#10;Görseldeki soruyu çöz"
+              value={questionText}
+              onChange={(e) => setQuestionText(e.target.value)}
+              rows={6}
+              className="text-base resize-none"
+              disabled={isSending}
+            />
+
+            {/* Image Upload Area */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Soru Görseli (Opsiyonel)
+              </label>
+
+              {!imagePreview ? (
+                <div
+                  ref={dropZoneRef}
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
+                >
+                  <Upload className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+                  <p className="text-sm font-medium mb-1">
+                    Soru görselini buraya sürükleyin veya tıklayın
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    PNG, JPG, JPEG (Max 5MB)
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileInput}
+                    className="hidden"
+                  />
+                </div>
+              ) : (
+                <div className="relative border-2 border-border rounded-lg p-4">
+                  <img
+                    src={imagePreview}
+                    alt="Soru görseli"
+                    className="max-h-96 mx-auto rounded-lg"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2"
+                    onClick={handleRemoveImage}
+                    disabled={isSending}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <Button
+              onClick={handleSubmit}
+              disabled={(!questionText.trim() && !selectedImage) || isSending || (!isPremium && !canSendMessage)}
+              className="w-full h-12 text-lg"
+              size="lg"
+            >
+              {isSending ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Çözülüyor...
+                </>
+              ) : (
+                <>
+                  <Send className="w-5 h-5 mr-2" />
+                  Soruyu Gönder ve Çöz
+                </>
+              )}
+            </Button>
+
+            {!isPremium && !canSendMessage && (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-center">
+                <p className="text-sm text-destructive font-medium">
+                  Günlük soru limitine ulaştınız ({dailyLimit}/{dailyLimit})
+                </p>
+                <Button variant="outline" size="sm" className="mt-2">
+                  <Crown className="w-3 h-3 mr-1" />
+                  Plus'a Yükselt - Sınırsız Soru
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* AI Response */}
+        {aiResponse && (
+          <Card className="border-primary/50 bg-gradient-to-br from-primary/5 to-accent/5">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
+                  <Bot className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <CardTitle>Çözüm</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <ReactMarkdown>{aiResponse}</ReactMarkdown>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-border">
+                <Button
+                  onClick={() => {
+                    setAiResponse(null);
+                    setQuestionText('');
+                  }}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Yeni Soru Sor
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

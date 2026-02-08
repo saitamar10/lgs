@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, Suspense, lazy } from 'react';
+import { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -123,18 +123,18 @@ export function ExperimentView({ unitId, unitName, subjectName, onComplete, onEx
   };
 
   const experiment3D = get3DExperiment();
+  const simulationRef = useRef<HTMLDivElement>(null);
 
   const toggleFullscreen = () => {
+    const el = simulationRef.current;
+    if (!el) return;
+
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().then(() => {
-        setIsFullscreen(true);
-      }).catch(() => {
+      el.requestFullscreen().catch(() => {
         toast.error('Tam ekran modu desteklenmiyor');
       });
     } else {
-      document.exitFullscreen().then(() => {
-        setIsFullscreen(false);
-      });
+      document.exitFullscreen();
     }
   };
 
@@ -214,20 +214,7 @@ export function ExperimentView({ unitId, unitName, subjectName, onComplete, onEx
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0 ml-2">
-              <Button
-                variant={isFullscreen ? "destructive" : "default"}
-                size="icon"
-                onClick={toggleFullscreen}
-                className="w-10 h-10"
-                title={isFullscreen ? "Tam Ekrandan Çık" : "Tam Ekran"}
-              >
-                {isFullscreen ? (
-                  <Minimize2 className="w-5 h-5" />
-                ) : (
-                  <Maximize2 className="w-5 h-5" />
-                )}
-              </Button>
-              <Badge variant="outline" className="hidden sm:inline-flex">
+              <Badge variant="outline">
                 {currentStep + 1} / {experiment.length}
               </Badge>
             </div>
@@ -280,7 +267,25 @@ export function ExperimentView({ unitId, unitName, subjectName, onComplete, onEx
                       <h3 className="font-bold">🎮 3D Simülasyon</h3>
                     </div>
                   </div>
-                  <div className="rounded-xl bg-background border-4 border-primary/30 overflow-hidden" style={{ height: isFullscreen ? '100vh' : '650px', minHeight: '350px' }}>
+                  <div
+                    ref={simulationRef}
+                    className="relative rounded-xl bg-background border-4 border-primary/30 overflow-hidden"
+                    style={{ height: isFullscreen ? '100vh' : '650px', minHeight: '350px' }}
+                  >
+                    {/* Fullscreen toggle button inside 3D area */}
+                    <Button
+                      variant={isFullscreen ? "destructive" : "default"}
+                      size="icon"
+                      onClick={toggleFullscreen}
+                      className="absolute top-3 right-3 z-50 w-10 h-10 shadow-lg"
+                      title={isFullscreen ? "Tam Ekrandan Çık" : "Tam Ekran"}
+                    >
+                      {isFullscreen ? (
+                        <Minimize2 className="w-5 h-5" />
+                      ) : (
+                        <Maximize2 className="w-5 h-5" />
+                      )}
+                    </Button>
                     <Suspense fallback={
                       <div className="flex items-center justify-center h-full bg-gradient-to-br from-primary/10 to-background">
                         <div className="text-center">

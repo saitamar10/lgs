@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-2.5-pro",
         messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
-        max_tokens: 4096,
+        max_tokens: 16384,
         temperature: 0.7,
       }),
     });

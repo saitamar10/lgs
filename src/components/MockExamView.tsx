@@ -779,21 +779,14 @@ export function MockExamView({ onBack }: MockExamViewProps) {
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
           {/* PDF Viewer */}
           <div className="flex-1 h-[50vh] lg:h-auto border-b lg:border-b-0 lg:border-r border-border relative">
-            {/* Mobile: Show button to open PDF in new tab (iframes don't work well on mobile) */}
-            <div className="flex lg:hidden items-center justify-center h-full bg-muted/30 p-4">
-              <div className="text-center space-y-4">
-                <FileText className="w-16 h-16 mx-auto text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Mobilde PDF'i yeni sekmede açın</p>
-                <Button
-                  onClick={() => window.open(currentPdfUrl, '_blank')}
-                  className="w-full"
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  PDF'i Aç
-                </Button>
-              </div>
-            </div>
-            {/* Desktop: Show PDF in iframe */}
+            {/* Mobile: Embed PDF via Google Docs Viewer (works on all mobile browsers) */}
+            <iframe
+              src={`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(currentPdfUrl)}`}
+              className="w-full h-full lg:hidden"
+              title="Sınav PDF"
+              allowFullScreen
+            />
+            {/* Desktop: Show PDF in native iframe */}
             <iframe
               src={`${currentPdfUrl}#toolbar=1&navpanes=0`}
               className="w-full h-full hidden lg:block"

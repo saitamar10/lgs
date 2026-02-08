@@ -806,7 +806,13 @@ export function MockExamView({ onBack }: MockExamViewProps) {
                   <Target className="w-5 h-5" />
                   {currentSubject.name} - Cevap Anahtarı
                 </h3>
-                
+
+                <div className="p-3 mb-4 bg-info/10 border border-info/20 rounded-lg">
+                  <p className="text-sm text-muted-foreground text-center font-medium">
+                    Çözdüğün cevapları not al, sonra burada şıkları işaretle
+                  </p>
+                </div>
+
                 <div className="space-y-2">
                   {subjectQuestions.map(q => (
                     <div key={q.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">

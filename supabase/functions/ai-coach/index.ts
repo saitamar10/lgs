@@ -61,7 +61,16 @@ Deno.serve(async (req) => {
         .limit(20); // Son 20 mesaj ile sınırla
 
       if (previousMessages && previousMessages.length > 0) {
-        for (const msg of previousMessages) {
+        // Son mesaj az önce kaydedilen kullanıcı mesajıysa çıkar (görselsiz kaydedildi, burada görselli eklenecek)
+        let messagesToUse = previousMessages;
+        if (messagesToUse.length > 0) {
+          const lastMsg = messagesToUse[messagesToUse.length - 1];
+          if (lastMsg.role === 'user' && lastMsg.content === message) {
+            messagesToUse = messagesToUse.slice(0, -1);
+          }
+        }
+
+        for (const msg of messagesToUse) {
           historyMessages.push({
             role: msg.role,
             content: msg.content

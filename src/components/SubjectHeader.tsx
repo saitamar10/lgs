@@ -1,6 +1,6 @@
 import { Subject } from '@/hooks/useSubjects';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, BookOpen } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SubjectHeaderProps {
@@ -49,14 +49,6 @@ export function SubjectHeader({ subject, unitName, unitIndex, totalUnits, onBack
             </h2>
           </div>
         </div>
-        <Button 
-          variant="secondary" 
-          size="sm"
-          className="bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground border-0"
-        >
-          <BookOpen className="w-4 h-4 mr-1" />
-          REHBER
-        </Button>
       </div>
     </div>
   );

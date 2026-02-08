@@ -42,10 +42,9 @@ import { DesktopChatWidget } from '@/components/DesktopChatWidget';
 import { Mascot } from '@/components/Mascot';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { isScienceSubject, isHistorySubject } from '@/utils/subjectHelpers';
-import { InteractiveNarrationView } from '@/components/InteractiveNarrationView';
+import { isScienceSubject } from '@/utils/subjectHelpers';
 
-type View = 'dashboard' | 'units' | 'quiz' | 'complete' | 'leaderboard' | 'profile' | 'coach' | 'vocabulary' | 'mock-exam' | 'lesson' | 'todays-plan' | 'friends' | 'subscription' | 'experiment' | 'chat' | 'interactive';
+type View = 'dashboard' | 'units' | 'quiz' | 'complete' | 'leaderboard' | 'profile' | 'coach' | 'vocabulary' | 'mock-exam' | 'lesson' | 'todays-plan' | 'friends' | 'subscription' | 'experiment' | 'chat';
 
 interface QuizState {
   unitId: string;
@@ -78,7 +77,6 @@ export function Dashboard() {
   const [quizState, setQuizState] = useState<QuizState | null>(null);
   const [lessonState, setLessonState] = useState<LessonState | null>(null);
   const [experimentState, setExperimentState] = useState<ExperimentState | null>(null);
-  const [interactiveState, setInteractiveState] = useState<{ unitId: string; unitName: string; subjectName: string } | null>(null);
   const [quizResult, setQuizResult] = useState<{ score: number; total: number; xp: number } | null>(null);
   const [showExamSetup, setShowExamSetup] = useState(false);
   const [showNoHeartsDialog, setShowNoHeartsDialog] = useState(false);
@@ -338,7 +336,6 @@ export function Dashboard() {
     setAiQuestions([]);
     setLessonState(null);
     setLessonSlides([]);
-    setInteractiveState(null);
     setCurrentView('dashboard');
   };
 
@@ -367,12 +364,6 @@ export function Dashboard() {
     const subjectName = selectedSubject?.name || 'Fen Bilimleri';
     setExperimentState({ unitId, unitName, subjectName });
     setCurrentView('experiment');
-  };
-
-  const handleStartInteractive = (unitId: string, unitName: string) => {
-    const subjectName = selectedSubject?.name || 'T.C. İnkılap Tarihi';
-    setInteractiveState({ unitId, unitName, subjectName });
-    setCurrentView('interactive');
   };
 
   const handleNavigate = (view: 'dashboard' | 'leaderboard' | 'profile' | 'coach' | 'vocabulary' | 'mock-exam' | 'todays-plan' | 'friends' | 'subscription') => {
@@ -708,21 +699,6 @@ export function Dashboard() {
     );
   }
 
-  // Interactive narration view (İnkılap Tarihi)
-  if (currentView === 'interactive' && interactiveState) {
-    return (
-      <InteractiveNarrationView
-        unitName={interactiveState.unitName}
-        subjectName={interactiveState.subjectName}
-        onComplete={() => {
-          setInteractiveState(null);
-          handleStartQuiz(interactiveState.unitId, interactiveState.unitName, 'easy');
-        }}
-        onExit={handleBackToDashboard}
-      />
-    );
-  }
-
   // Profile view - use full ProfilePage component
   if (currentView === 'profile') {
     return (
@@ -846,9 +822,7 @@ export function Dashboard() {
                   onSelectStage={handleStartQuiz}
                   onStartLesson={handleStartLesson}
                   onStartExperiment={handleStartExperiment}
-                  onStartInteractive={handleStartInteractive}
                   isScienceSubject={isScienceSubject(selectedSubject?.id || '', selectedSubject?.name || '')}
-                  isHistorySubject={isHistorySubject(selectedSubject?.id || '', selectedSubject?.name || '')}
                   isPremium={isPremium}
                 />
               ) : (

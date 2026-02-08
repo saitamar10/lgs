@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 import { X, Heart, Zap, Clock, PenLine } from 'lucide-react';
 import { Whiteboard } from './Whiteboard';
 import { toast } from 'sonner';
+import mascotHappy from '@/assets/mascot.png';
+import mascotEncouraging from '@/assets/mascot-encouraging.png';
 
 interface QuizScreenProps {
   questions: Question[];
@@ -274,10 +276,16 @@ export function QuizScreen({
                 onClick={() => handleSelectAnswer(index)}
                 disabled={showResult}
                 className={cn(
-                  "w-full p-4 rounded-xl text-left transition-all duration-200",
+                  "w-full p-4 rounded-xl text-left transition-all duration-200 flex items-center gap-3",
                   optionClass
                 )}
               >
+                <img
+                  src={isSelected ? mascotEncouraging : mascotHappy}
+                  alt=""
+                  className="w-8 h-8 object-contain shrink-0"
+                  draggable={false}
+                />
                 <MathText className="font-medium text-foreground">{option}</MathText>
               </button>
             );

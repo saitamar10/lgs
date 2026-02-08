@@ -29,8 +29,22 @@ export function RightPanel({ onNavigateToLeaderboard }: RightPanelProps) {
   const [showPaywall, setShowPaywall] = useState(false);
   const [showAllTasks, setShowAllTasks] = useState(false);
 
-  // Track completed tasks to avoid duplicate celebrations
-  const celebratedTasksRef = useRef(new Set<string>());
+  // Track completed tasks to avoid duplicate celebrations (persist in localStorage)
+  const celebratedTasksRef = useRef<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem('celebrated_tasks');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return new Set<string>(parsed);
+      }
+    } catch {}
+    return new Set<string>();
+  });
+
+  // Initialize ref properly (lazy init workaround for useRef)
+  if (typeof celebratedTasksRef.current === 'function') {
+    celebratedTasksRef.current = (celebratedTasksRef.current as any)();
+  }
 
   // Enable realtime updates for tasks
   useRealtimeTasks();
@@ -54,31 +68,57 @@ export function RightPanel({ onNavigateToLeaderboard }: RightPanelProps) {
   useEffect(() => {
     if (!taskProgress || !tasks) return;
 
+    // Clean up old celebrated tasks from previous days
+    const today = new Date().toISOString().split('T')[0];
+    const storedDate = localStorage.getItem('celebrated_tasks_date');
+    if (storedDate !== today) {
+      celebratedTasksRef.current = new Set<string>();
+      localStorage.setItem('celebrated_tasks_date', today);
+      localStorage.removeItem('celebrated_tasks');
+    }
+
+    let hasNewCompletion = false;
+
     taskProgress.forEach(progress => {
       const task = tasks.find(t => t.id === progress.task_id);
 
       // Check if task is completed and hasn't been celebrated yet
       if (progress.completed && task && !celebratedTasksRef.current.has(progress.id)) {
+        // Only celebrate if it was completed recently (within last 10 seconds)
+        const completedAt = progress.completed_at ? new Date(progress.completed_at).getTime() : 0;
+        const now = Date.now();
+        const isRecent = completedAt > 0 && (now - completedAt) < 10000;
+
         celebratedTasksRef.current.add(progress.id);
+        hasNewCompletion = true;
 
-        // Trigger confetti animation
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6']
-        });
+        if (isRecent) {
+          // Trigger confetti animation only for recently completed tasks
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6']
+          });
 
-        // Show success toast
-        toast.success(
-          `🎉 "${task.title}" tamamlandı! +${task.xp_reward} XP`,
-          {
-            duration: 4000,
-            position: 'top-center'
-          }
-        );
+          // Show success toast
+          toast.success(
+            `🎉 "${task.title}" tamamlandı! +${task.xp_reward} XP`,
+            {
+              duration: 4000,
+              position: 'top-center'
+            }
+          );
+        }
       }
     });
+
+    // Persist to localStorage if changed
+    if (hasNewCompletion) {
+      try {
+        localStorage.setItem('celebrated_tasks', JSON.stringify([...celebratedTasksRef.current]));
+      } catch {}
+    }
   }, [taskProgress, tasks]);
 
   return (

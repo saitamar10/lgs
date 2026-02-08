@@ -173,12 +173,12 @@ const mockExams: ExamData[] = [
 },
 {
   id: 'cikmis-sorular',
-  title: 'Çıkmış Sorular Denemesi',
-  description: 'Geçmiş yıl LGS sorularından oluşturulmuş özel deneme',
+  title: '2025 LGS Çıkmış Sorular',
+  description: '2025 LGS gerçek sınav soruları (EBA)',
   duration: 135,
   pdfUrls: {
-    verbal: 'https://bartinodm.meb.gov.tr/meb_iys_dosyalar/2020_06/18110220_ONLINE_1_SOZ_A.pdf',
-    numeric: 'https://bartinodm.meb.gov.tr/meb_iys_dosyalar/2020_06/18110220_ONLINE_1_SAY_A.pdf'
+    verbal: 'https://cdn.eba.gov.tr/yardimcikaynaklar/2025/06/lgs/2025sozel.pdf',
+    numeric: 'https://cdn.eba.gov.tr/yardimcikaynaklar/2025/06/lgss/2025sayisal.pdf'
   },
   subjects: [
     { name: 'Türkçe', questionCount: 20, startIndex: 0, pdfType: 'verbal' },
@@ -778,10 +778,25 @@ export function MockExamView({ onBack }: MockExamViewProps) {
         {/* Main Content: PDF + Answer Grid */}
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
           {/* PDF Viewer */}
-          <div className="flex-1 h-[50vh] lg:h-auto border-b lg:border-b-0 lg:border-r border-border">
+          <div className="flex-1 h-[50vh] lg:h-auto border-b lg:border-b-0 lg:border-r border-border relative">
+            {/* Mobile: Show button to open PDF in new tab (iframes don't work well on mobile) */}
+            <div className="flex lg:hidden items-center justify-center h-full bg-muted/30 p-4">
+              <div className="text-center space-y-4">
+                <FileText className="w-16 h-16 mx-auto text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Mobilde PDF'i yeni sekmede açın</p>
+                <Button
+                  onClick={() => window.open(currentPdfUrl, '_blank')}
+                  className="w-full"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  PDF'i Aç
+                </Button>
+              </div>
+            </div>
+            {/* Desktop: Show PDF in iframe */}
             <iframe
               src={`${currentPdfUrl}#toolbar=1&navpanes=0`}
-              className="w-full h-full"
+              className="w-full h-full hidden lg:block"
               title="Sınav PDF"
             />
           </div>

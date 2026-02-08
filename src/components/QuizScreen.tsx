@@ -53,6 +53,9 @@ export function QuizScreen({
   // Beyaz tahta (whiteboard) state
   const [showWhiteboard, setShowWhiteboard] = useState(false);
 
+  // Track first-attempt results for accurate scoring
+  const [firstAttemptWrong, setFirstAttemptWrong] = useState<Set<string>>(new Set());
+
   // Track mistakes per question for weak topic detection
   const [questionMistakes, setQuestionMistakes] = useState<Map<string, number>>(new Map());
   const [showWeakTopicDialog, setShowWeakTopicDialog] = useState(false);
@@ -118,7 +121,12 @@ export function QuizScreen({
         return;
       }
 
-      // NORMAL MODE: Track mistakes for weak topic detection
+      // NORMAL MODE: Track first-attempt wrong answers for accurate scoring
+      if (!firstAttemptWrong.has(currentQuestion.id) && !answeredCorrectly.has(currentQuestion.id)) {
+        setFirstAttemptWrong(prev => new Set(prev).add(currentQuestion.id));
+      }
+
+      // Track mistakes for weak topic detection
       const newMistakes = new Map(questionMistakes);
       const currentMistakeCount = (newMistakes.get(currentQuestion.id) || 0) + 1;
       newMistakes.set(currentQuestion.id, currentMistakeCount);
@@ -167,7 +175,9 @@ export function QuizScreen({
       if (answeredCorrectly.size === questions.length || questionQueue.length === 1) {
         // Calculate time taken if in challenge mode
         const timeSeconds = challengeMode ? Math.floor((Date.now() - startTime) / 1000) : undefined;
-        onComplete(correctCount, questions.length, totalXP, timeSeconds);
+        // Report first-attempt correct count (total - first attempt wrong) for accurate scoring
+        const firstAttemptCorrect = questions.length - firstAttemptWrong.size;
+        onComplete(firstAttemptCorrect, questions.length, totalXP, timeSeconds);
         return;
       }
 
@@ -234,7 +244,7 @@ export function QuizScreen({
       </div>
 
       {/* Question - use displayedQuestion during result phase to show correct question */}
-      <div className="max-w-2xl mx-auto p-4 pb-32">
+      <div className="max-w-2xl mx-auto p-4 pb-36 overflow-y-auto">
         <div className="mb-8 animate-slide-up" key={(displayedQuestion || currentQuestion).id + currentIndex}>
           <h2 className="text-xl md:text-2xl font-bold text-foreground">
             <MathText>{(displayedQuestion || currentQuestion).question_text}</MathText>
@@ -283,7 +293,7 @@ export function QuizScreen({
                 <img
                   src={isSelected ? mascotEncouraging : mascotHappy}
                   alt=""
-                  className="w-8 h-8 object-contain shrink-0"
+                  className="w-8 h-8 object-contain shrink-0 mix-blend-multiply dark:mix-blend-screen"
                   draggable={false}
                 />
                 <MathText className="font-medium text-foreground">{option}</MathText>

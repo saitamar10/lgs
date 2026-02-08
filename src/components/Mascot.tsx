@@ -51,7 +51,7 @@ export function Mascot({
           width={dimension}
           height={dimension}
           className={cn(
-            'select-none object-contain',
+            'select-none object-contain mix-blend-multiply dark:mix-blend-screen',
             animate && mood === 'celebrating' && 'animate-bounce',
           )}
           draggable={false}

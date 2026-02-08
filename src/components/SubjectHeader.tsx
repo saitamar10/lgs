@@ -38,9 +38,9 @@ export function SubjectHeader({ subject, unitName, unitIndex, totalUnits, onBack
             </Button>
           )}
           <div>
-            {unitIndex !== undefined && totalUnits !== undefined && (
+            {totalUnits !== undefined && (
               <p className="text-sm opacity-80 mb-0.5">
-                ← {unitIndex + 1}. KISIM, {totalUnits} ÜNİTE
+                {totalUnits} ünite
               </p>
             )}
             <h2 className="text-lg font-bold flex items-center gap-2">

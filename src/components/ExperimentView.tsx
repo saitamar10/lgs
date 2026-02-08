@@ -297,7 +297,7 @@ export function ExperimentView({ unitId, unitName, subjectName, onComplete, onEx
                       )}
                     </Button>
                   </div>
-                  <div className="rounded-xl bg-background border-4 border-primary/30 overflow-hidden" style={{ height: '650px' }}>
+                  <div className="rounded-xl bg-background border-4 border-primary/30 overflow-hidden" style={{ height: isFullscreen ? '100vh' : '650px', minHeight: '350px' }}>
                     <Suspense fallback={
                       <div className="flex items-center justify-center h-full bg-gradient-to-br from-primary/10 to-background">
                         <div className="text-center">

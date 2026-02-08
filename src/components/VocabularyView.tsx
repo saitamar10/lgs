@@ -19,74 +19,244 @@ interface Word {
   turkish: string;
   example: string;
   level: 'A1' | 'A2' | 'B1';
+  unit: number;
   learned: boolean;
 }
 
-// A1-A2 Kelime Listesi (100+ kelime)
-const INITIAL_WORDS: Word[] = [
-  // A1 Level - Temel Kelimeler
-  { id: '1', english: 'hello', turkish: 'merhaba', example: 'Hello, how are you?', level: 'A1', learned: false },
-  { id: '2', english: 'goodbye', turkish: 'güle güle', example: 'Goodbye, see you later!', level: 'A1', learned: false },
-  { id: '3', english: 'please', turkish: 'lütfen', example: 'Please help me.', level: 'A1', learned: false },
-  { id: '4', english: 'thank', turkish: 'teşekkür etmek', example: 'Thank you very much!', level: 'A1', learned: false },
-  { id: '5', english: 'yes', turkish: 'evet', example: 'Yes, I agree.', level: 'A1', learned: false },
-  { id: '6', english: 'no', turkish: 'hayır', example: 'No, I disagree.', level: 'A1', learned: false },
-  { id: '7', english: 'water', turkish: 'su', example: 'I drink water every day.', level: 'A1', learned: false },
-  { id: '8', english: 'food', turkish: 'yemek', example: 'This food is delicious.', level: 'A1', learned: false },
-  { id: '9', english: 'house', turkish: 'ev', example: 'I live in a big house.', level: 'A1', learned: false },
-  { id: '10', english: 'family', turkish: 'aile', example: 'My family is very kind.', level: 'A1', learned: false },
-  { id: '11', english: 'friend', turkish: 'arkadaş', example: 'She is my best friend.', level: 'A1', learned: false },
-  { id: '12', english: 'school', turkish: 'okul', example: 'I go to school every day.', level: 'A1', learned: false },
-  { id: '13', english: 'teacher', turkish: 'öğretmen', example: 'My teacher is very patient.', level: 'A1', learned: false },
-  { id: '14', english: 'student', turkish: 'öğrenci', example: 'I am a student.', level: 'A1', learned: false },
-  { id: '15', english: 'book', turkish: 'kitap', example: 'I read a book every night.', level: 'A1', learned: false },
-  { id: '16', english: 'table', turkish: 'masa', example: 'The book is on the table.', level: 'A1', learned: false },
-  { id: '17', english: 'chair', turkish: 'sandalye', example: 'Please sit on the chair.', level: 'A1', learned: false },
-  { id: '18', english: 'door', turkish: 'kapı', example: 'Close the door, please.', level: 'A1', learned: false },
-  { id: '19', english: 'window', turkish: 'pencere', example: 'Open the window.', level: 'A1', learned: false },
-  { id: '20', english: 'car', turkish: 'araba', example: 'I have a new car.', level: 'A1', learned: false },
-  { id: '21', english: 'phone', turkish: 'telefon', example: 'My phone is ringing.', level: 'A1', learned: false },
-  { id: '22', english: 'computer', turkish: 'bilgisayar', example: 'I work on my computer.', level: 'A1', learned: false },
-  { id: '23', english: 'time', turkish: 'zaman', example: 'What time is it?', level: 'A1', learned: false },
-  { id: '24', english: 'day', turkish: 'gün', example: 'Have a nice day!', level: 'A1', learned: false },
-  { id: '25', english: 'night', turkish: 'gece', example: 'Good night!', level: 'A1', learned: false },
-  { id: '26', english: 'morning', turkish: 'sabah', example: 'Good morning!', level: 'A1', learned: false },
-  { id: '27', english: 'happy', turkish: 'mutlu', example: 'I am very happy today.', level: 'A1', learned: false },
-  { id: '28', english: 'sad', turkish: 'üzgün', example: 'She looks sad.', level: 'A1', learned: false },
-  { id: '29', english: 'big', turkish: 'büyük', example: 'This is a big house.', level: 'A1', learned: false },
-  { id: '30', english: 'small', turkish: 'küçük', example: 'I have a small dog.', level: 'A1', learned: false },
+const UNIT_NAMES: Record<number, string> = {
+  1: 'Friendship',
+  2: 'Teen Life',
+  3: 'Cooking',
+  4: 'Communication',
+  5: 'The Internet',
+  6: 'Adventures',
+  7: 'Tourism',
+  8: 'Chores',
+  9: 'Science',
+  10: 'Natural Forces',
+};
 
-  // A2 Level - Orta Kelimeler
-  { id: '31', english: 'beautiful', turkish: 'güzel', example: 'She has a beautiful smile.', level: 'A2', learned: false },
-  { id: '32', english: 'important', turkish: 'önemli', example: 'Education is very important.', level: 'A2', learned: false },
-  { id: '33', english: 'difficult', turkish: 'zor', example: 'This question is difficult.', level: 'A2', learned: false },
-  { id: '34', english: 'easy', turkish: 'kolay', example: 'This test is easy.', level: 'A2', learned: false },
-  { id: '35', english: 'knowledge', turkish: 'bilgi', example: 'Knowledge is power.', level: 'A2', learned: false },
-  { id: '36', english: 'remember', turkish: 'hatırlamak', example: 'I remember my first day.', level: 'A2', learned: false },
-  { id: '37', english: 'forget', turkish: 'unutmak', example: 'Do not forget your homework.', level: 'A2', learned: false },
-  { id: '38', english: 'understand', turkish: 'anlamak', example: 'I understand the lesson.', level: 'A2', learned: false },
-  { id: '39', english: 'explain', turkish: 'açıklamak', example: 'Can you explain this?', level: 'A2', learned: false },
-  { id: '40', english: 'question', turkish: 'soru', example: 'I have a question.', level: 'A2', learned: false },
-  { id: '41', english: 'answer', turkish: 'cevap', example: 'The answer is correct.', level: 'A2', learned: false },
-  { id: '42', english: 'problem', turkish: 'problem', example: 'We have a problem.', level: 'A2', learned: false },
-  { id: '43', english: 'solution', turkish: 'çözüm', example: 'I found a solution.', level: 'A2', learned: false },
-  { id: '44', english: 'healthy', turkish: 'sağlıklı', example: 'Eating fruit is healthy.', level: 'A2', learned: false },
-  { id: '45', english: 'exercise', turkish: 'egzersiz', example: 'I exercise every morning.', level: 'A2', learned: false },
-  { id: '46', english: 'weather', turkish: 'hava durumu', example: 'The weather is nice today.', level: 'A2', learned: false },
-  { id: '47', english: 'travel', turkish: 'seyahat etmek', example: 'I love to travel.', level: 'A2', learned: false },
-  { id: '48', english: 'country', turkish: 'ülke', example: 'Turkey is a beautiful country.', level: 'A2', learned: false },
-  { id: '49', english: 'city', turkish: 'şehir', example: 'Istanbul is a big city.', level: 'A2', learned: false },
-  { id: '50', english: 'money', turkish: 'para', example: 'I need some money.', level: 'A2', learned: false },
-  { id: '51', english: 'buy', turkish: 'satın almak', example: 'I want to buy a book.', level: 'A2', learned: false },
-  { id: '52', english: 'sell', turkish: 'satmak', example: 'They sell fresh fruit.', level: 'A2', learned: false },
-  { id: '53', english: 'shop', turkish: 'dükkan', example: 'The shop is closed.', level: 'A2', learned: false },
-  { id: '54', english: 'market', turkish: 'pazar', example: 'I go to the market.', level: 'A2', learned: false },
-  { id: '55', english: 'clothes', turkish: 'elbise', example: 'I bought new clothes.', level: 'A2', learned: false },
-  { id: '56', english: 'wear', turkish: 'giymek', example: 'I wear a jacket.', level: 'A2', learned: false },
-  { id: '57', english: 'clean', turkish: 'temiz', example: 'The room is clean.', level: 'A2', learned: false },
-  { id: '58', english: 'dirty', turkish: 'kirli', example: 'My hands are dirty.', level: 'A2', learned: false },
-  { id: '59', english: 'wash', turkish: 'yıkamak', example: 'Wash your hands.', level: 'A2', learned: false },
-  { id: '60', english: 'cook', turkish: 'pişirmek', example: 'My mother cooks well.', level: 'A2', learned: false },
+// 8. Sınıf İngilizce Müfredatı - Ünite Bazlı Kelimeler
+const INITIAL_WORDS: Word[] = [
+  // ===== UNIT 1: FRIENDSHIP =====
+  { id: 'u1-1', english: 'friendship', turkish: 'arkadaşlık', example: 'Friendship is very important in life.', level: 'A2', unit: 1, learned: false },
+  { id: 'u1-2', english: 'buddy', turkish: 'yakın arkadaş', example: 'He is my best buddy.', level: 'A2', unit: 1, learned: false },
+  { id: 'u1-3', english: 'count on', turkish: 'güvenmek', example: 'You can always count on me.', level: 'A2', unit: 1, learned: false },
+  { id: 'u1-4', english: 'trust', turkish: 'güvenmek', example: 'I trust my best friend.', level: 'A2', unit: 1, learned: false },
+  { id: 'u1-5', english: 'loyal', turkish: 'sadık', example: 'A loyal friend never leaves you.', level: 'A2', unit: 1, learned: false },
+  { id: 'u1-6', english: 'honest', turkish: 'dürüst', example: 'She is an honest person.', level: 'A2', unit: 1, learned: false },
+  { id: 'u1-7', english: 'supportive', turkish: 'destekleyici', example: 'My friends are very supportive.', level: 'A2', unit: 1, learned: false },
+  { id: 'u1-8', english: 'caring', turkish: 'ilgili, şefkatli', example: 'She is a caring friend.', level: 'A2', unit: 1, learned: false },
+  { id: 'u1-9', english: 'generous', turkish: 'cömert', example: 'He is generous with his time.', level: 'A2', unit: 1, learned: false },
+  { id: 'u1-10', english: 'selfish', turkish: 'bencil', example: 'A selfish person only thinks about himself.', level: 'A2', unit: 1, learned: false },
+  { id: 'u1-11', english: 'jealous', turkish: 'kıskanç', example: 'Don\'t be jealous of others.', level: 'A2', unit: 1, learned: false },
+  { id: 'u1-12', english: 'arrogant', turkish: 'kibirli', example: 'Nobody likes an arrogant person.', level: 'B1', unit: 1, learned: false },
+  { id: 'u1-13', english: 'stubborn', turkish: 'inatçı', example: 'He is too stubborn to change his mind.', level: 'B1', unit: 1, learned: false },
+  { id: 'u1-14', english: 'reliable', turkish: 'güvenilir', example: 'She is a reliable person.', level: 'A2', unit: 1, learned: false },
+  { id: 'u1-15', english: 'apologize', turkish: 'özür dilemek', example: 'You should apologize for your mistake.', level: 'A2', unit: 1, learned: false },
+  { id: 'u1-16', english: 'back up', turkish: 'desteklemek', example: 'Real friends always back you up.', level: 'A2', unit: 1, learned: false },
+  { id: 'u1-17', english: 'get on well', turkish: 'iyi geçinmek', example: 'I get on well with my classmates.', level: 'A2', unit: 1, learned: false },
+  { id: 'u1-18', english: 'hang out', turkish: 'takılmak', example: 'We hang out at the park after school.', level: 'A2', unit: 1, learned: false },
+  { id: 'u1-19', english: 'have in common', turkish: 'ortak noktası olmak', example: 'We have a lot in common.', level: 'A2', unit: 1, learned: false },
+  { id: 'u1-20', english: 'share', turkish: 'paylaşmak', example: 'Good friends share everything.', level: 'A1', unit: 1, learned: false },
+
+  // ===== UNIT 2: TEEN LIFE =====
+  { id: 'u2-1', english: 'teenager', turkish: 'ergen', example: 'Teenagers like spending time with friends.', level: 'A2', unit: 2, learned: false },
+  { id: 'u2-2', english: 'prefer', turkish: 'tercih etmek', example: 'I prefer reading to watching TV.', level: 'A2', unit: 2, learned: false },
+  { id: 'u2-3', english: 'attend', turkish: 'katılmak', example: 'I attend a music course.', level: 'A2', unit: 2, learned: false },
+  { id: 'u2-4', english: 'hardly ever', turkish: 'neredeyse hiç', example: 'I hardly ever eat junk food.', level: 'A2', unit: 2, learned: false },
+  { id: 'u2-5', english: 'spare time', turkish: 'boş zaman', example: 'I read books in my spare time.', level: 'A2', unit: 2, learned: false },
+  { id: 'u2-6', english: 'schedule', turkish: 'program, takvim', example: 'I have a busy schedule today.', level: 'A2', unit: 2, learned: false },
+  { id: 'u2-7', english: 'habit', turkish: 'alışkanlık', example: 'Reading is a good habit.', level: 'A2', unit: 2, learned: false },
+  { id: 'u2-8', english: 'activity', turkish: 'aktivite', example: 'Swimming is my favorite activity.', level: 'A1', unit: 2, learned: false },
+  { id: 'u2-9', english: 'join', turkish: 'katılmak', example: 'Would you like to join us?', level: 'A2', unit: 2, learned: false },
+  { id: 'u2-10', english: 'practice', turkish: 'pratik yapmak', example: 'I practice playing guitar every day.', level: 'A2', unit: 2, learned: false },
+  { id: 'u2-11', english: 'online', turkish: 'çevrimiçi', example: 'I take online courses.', level: 'A1', unit: 2, learned: false },
+  { id: 'u2-12', english: 'social media', turkish: 'sosyal medya', example: 'Teens spend too much time on social media.', level: 'A2', unit: 2, learned: false },
+  { id: 'u2-13', english: 'interest', turkish: 'ilgi', example: 'I have an interest in science.', level: 'A2', unit: 2, learned: false },
+  { id: 'u2-14', english: 'challenge', turkish: 'meydan okuma', example: 'Learning a new language is a challenge.', level: 'A2', unit: 2, learned: false },
+  { id: 'u2-15', english: 'enjoy', turkish: 'eğlenmek', example: 'I enjoy playing basketball.', level: 'A1', unit: 2, learned: false },
+  { id: 'u2-16', english: 'boring', turkish: 'sıkıcı', example: 'This movie is very boring.', level: 'A1', unit: 2, learned: false },
+  { id: 'u2-17', english: 'exciting', turkish: 'heyecanlı', example: 'The match was very exciting.', level: 'A2', unit: 2, learned: false },
+  { id: 'u2-18', english: 'usually', turkish: 'genellikle', example: 'I usually wake up at 7 am.', level: 'A1', unit: 2, learned: false },
+  { id: 'u2-19', english: 'routine', turkish: 'rutin', example: 'My daily routine starts early.', level: 'A2', unit: 2, learned: false },
+  { id: 'u2-20', english: 'outdoor', turkish: 'açık hava', example: 'I love outdoor activities.', level: 'A2', unit: 2, learned: false },
+
+  // ===== UNIT 3: COOKING =====
+  { id: 'u3-1', english: 'ingredient', turkish: 'malzeme', example: 'We need fresh ingredients for the salad.', level: 'A2', unit: 3, learned: false },
+  { id: 'u3-2', english: 'recipe', turkish: 'tarif', example: 'This is my grandmother\'s recipe.', level: 'A2', unit: 3, learned: false },
+  { id: 'u3-3', english: 'boil', turkish: 'kaynatmak', example: 'Boil the water first.', level: 'A2', unit: 3, learned: false },
+  { id: 'u3-4', english: 'fry', turkish: 'kızartmak', example: 'Fry the onions in butter.', level: 'A2', unit: 3, learned: false },
+  { id: 'u3-5', english: 'bake', turkish: 'fırında pişirmek', example: 'Bake the cake for 30 minutes.', level: 'A2', unit: 3, learned: false },
+  { id: 'u3-6', english: 'stir', turkish: 'karıştırmak', example: 'Stir the soup slowly.', level: 'A2', unit: 3, learned: false },
+  { id: 'u3-7', english: 'chop', turkish: 'doğramak', example: 'Chop the vegetables finely.', level: 'A2', unit: 3, learned: false },
+  { id: 'u3-8', english: 'slice', turkish: 'dilimlemek', example: 'Slice the bread thinly.', level: 'A2', unit: 3, learned: false },
+  { id: 'u3-9', english: 'peel', turkish: 'soymak (kabuk)', example: 'Peel the potatoes before cooking.', level: 'A2', unit: 3, learned: false },
+  { id: 'u3-10', english: 'pour', turkish: 'dökmek', example: 'Pour the milk into the bowl.', level: 'A2', unit: 3, learned: false },
+  { id: 'u3-11', english: 'mix', turkish: 'karıştırmak', example: 'Mix the flour and eggs together.', level: 'A2', unit: 3, learned: false },
+  { id: 'u3-12', english: 'add', turkish: 'eklemek', example: 'Add some salt and pepper.', level: 'A1', unit: 3, learned: false },
+  { id: 'u3-13', english: 'delicious', turkish: 'lezzetli', example: 'This meal is delicious!', level: 'A1', unit: 3, learned: false },
+  { id: 'u3-14', english: 'tasty', turkish: 'lezzetli', example: 'The soup is very tasty.', level: 'A2', unit: 3, learned: false },
+  { id: 'u3-15', english: 'spicy', turkish: 'baharatlı', example: 'I don\'t like spicy food.', level: 'A2', unit: 3, learned: false },
+  { id: 'u3-16', english: 'sour', turkish: 'ekşi', example: 'Lemons taste sour.', level: 'A2', unit: 3, learned: false },
+  { id: 'u3-17', english: 'bitter', turkish: 'acı', example: 'This coffee is too bitter.', level: 'A2', unit: 3, learned: false },
+  { id: 'u3-18', english: 'roast', turkish: 'kızartmak (fırında)', example: 'Roast the chicken for an hour.', level: 'A2', unit: 3, learned: false },
+  { id: 'u3-19', english: 'grate', turkish: 'rendelemek', example: 'Grate the cheese on top.', level: 'B1', unit: 3, learned: false },
+  { id: 'u3-20', english: 'serve', turkish: 'servis etmek', example: 'Serve the dish hot.', level: 'A2', unit: 3, learned: false },
+
+  // ===== UNIT 4: COMMUNICATION =====
+  { id: 'u4-1', english: 'communicate', turkish: 'iletişim kurmak', example: 'We communicate by phone.', level: 'A2', unit: 4, learned: false },
+  { id: 'u4-2', english: 'conversation', turkish: 'konuşma', example: 'We had a long conversation.', level: 'A2', unit: 4, learned: false },
+  { id: 'u4-3', english: 'message', turkish: 'mesaj', example: 'I sent you a message.', level: 'A1', unit: 4, learned: false },
+  { id: 'u4-4', english: 'contact', turkish: 'iletişime geçmek', example: 'You can contact me anytime.', level: 'A2', unit: 4, learned: false },
+  { id: 'u4-5', english: 'express', turkish: 'ifade etmek', example: 'It\'s important to express your feelings.', level: 'A2', unit: 4, learned: false },
+  { id: 'u4-6', english: 'body language', turkish: 'beden dili', example: 'Body language is important in communication.', level: 'A2', unit: 4, learned: false },
+  { id: 'u4-7', english: 'gesture', turkish: 'el hareketi, jest', example: 'He made a friendly gesture.', level: 'B1', unit: 4, learned: false },
+  { id: 'u4-8', english: 'nod', turkish: 'başını sallamak (evet)', example: 'She nodded to say yes.', level: 'A2', unit: 4, learned: false },
+  { id: 'u4-9', english: 'refuse', turkish: 'reddetmek', example: 'He refused my invitation.', level: 'A2', unit: 4, learned: false },
+  { id: 'u4-10', english: 'accept', turkish: 'kabul etmek', example: 'She accepted the offer.', level: 'A2', unit: 4, learned: false },
+  { id: 'u4-11', english: 'apologize', turkish: 'özür dilemek', example: 'I apologize for being late.', level: 'A2', unit: 4, learned: false },
+  { id: 'u4-12', english: 'interrupt', turkish: 'sözünü kesmek', example: 'Don\'t interrupt when someone is talking.', level: 'B1', unit: 4, learned: false },
+  { id: 'u4-13', english: 'polite', turkish: 'kibar', example: 'Always be polite to others.', level: 'A2', unit: 4, learned: false },
+  { id: 'u4-14', english: 'rude', turkish: 'kaba', example: 'It\'s rude to shout at people.', level: 'A2', unit: 4, learned: false },
+  { id: 'u4-15', english: 'explain', turkish: 'açıklamak', example: 'Can you explain this to me?', level: 'A2', unit: 4, learned: false },
+  { id: 'u4-16', english: 'argue', turkish: 'tartışmak', example: 'They always argue about everything.', level: 'A2', unit: 4, learned: false },
+  { id: 'u4-17', english: 'agree', turkish: 'katılmak, aynı fikirde olmak', example: 'I agree with you.', level: 'A2', unit: 4, learned: false },
+  { id: 'u4-18', english: 'disagree', turkish: 'katılmamak', example: 'I disagree with that idea.', level: 'A2', unit: 4, learned: false },
+  { id: 'u4-19', english: 'suggestion', turkish: 'öneri', example: 'Thank you for your suggestion.', level: 'A2', unit: 4, learned: false },
+  { id: 'u4-20', english: 'opinion', turkish: 'görüş, fikir', example: 'In my opinion, this is wrong.', level: 'A2', unit: 4, learned: false },
+
+  // ===== UNIT 5: THE INTERNET =====
+  { id: 'u5-1', english: 'access', turkish: 'erişim, erişmek', example: 'I can access the internet from my phone.', level: 'A2', unit: 5, learned: false },
+  { id: 'u5-2', english: 'download', turkish: 'indirmek', example: 'I downloaded a new app.', level: 'A1', unit: 5, learned: false },
+  { id: 'u5-3', english: 'upload', turkish: 'yüklemek', example: 'She uploaded her photos.', level: 'A1', unit: 5, learned: false },
+  { id: 'u5-4', english: 'search', turkish: 'aramak', example: 'I search for information online.', level: 'A1', unit: 5, learned: false },
+  { id: 'u5-5', english: 'browse', turkish: 'göz atmak', example: 'I browse the internet every evening.', level: 'A2', unit: 5, learned: false },
+  { id: 'u5-6', english: 'website', turkish: 'web sitesi', example: 'Visit our website for more info.', level: 'A1', unit: 5, learned: false },
+  { id: 'u5-7', english: 'password', turkish: 'şifre', example: 'Don\'t share your password.', level: 'A1', unit: 5, learned: false },
+  { id: 'u5-8', english: 'log in', turkish: 'giriş yapmak', example: 'Log in to your account.', level: 'A2', unit: 5, learned: false },
+  { id: 'u5-9', english: 'log out', turkish: 'çıkış yapmak', example: 'Always log out after using the computer.', level: 'A2', unit: 5, learned: false },
+  { id: 'u5-10', english: 'account', turkish: 'hesap', example: 'I created a new email account.', level: 'A2', unit: 5, learned: false },
+  { id: 'u5-11', english: 'click', turkish: 'tıklamak', example: 'Click the link to open it.', level: 'A1', unit: 5, learned: false },
+  { id: 'u5-12', english: 'share', turkish: 'paylaşmak', example: 'She shared a post on social media.', level: 'A1', unit: 5, learned: false },
+  { id: 'u5-13', english: 'cyberbullying', turkish: 'siber zorbalık', example: 'Cyberbullying is a serious problem.', level: 'B1', unit: 5, learned: false },
+  { id: 'u5-14', english: 'privacy', turkish: 'gizlilik', example: 'Protect your privacy online.', level: 'B1', unit: 5, learned: false },
+  { id: 'u5-15', english: 'virus', turkish: 'virüs', example: 'My computer has a virus.', level: 'A2', unit: 5, learned: false },
+  { id: 'u5-16', english: 'update', turkish: 'güncellemek', example: 'You should update your software.', level: 'A2', unit: 5, learned: false },
+  { id: 'u5-17', english: 'connect', turkish: 'bağlanmak', example: 'Connect to the Wi-Fi network.', level: 'A2', unit: 5, learned: false },
+  { id: 'u5-18', english: 'online shopping', turkish: 'internet alışverişi', example: 'Online shopping is very popular.', level: 'A2', unit: 5, learned: false },
+  { id: 'u5-19', english: 'blog', turkish: 'blog', example: 'I write a blog about technology.', level: 'A2', unit: 5, learned: false },
+  { id: 'u5-20', english: 'digital', turkish: 'dijital', example: 'We live in a digital world.', level: 'A2', unit: 5, learned: false },
+
+  // ===== UNIT 6: ADVENTURES =====
+  { id: 'u6-1', english: 'adventure', turkish: 'macera', example: 'Life is an adventure.', level: 'A2', unit: 6, learned: false },
+  { id: 'u6-2', english: 'explore', turkish: 'keşfetmek', example: 'I want to explore the world.', level: 'A2', unit: 6, learned: false },
+  { id: 'u6-3', english: 'discover', turkish: 'keşfetmek, bulmak', example: 'Columbus discovered America.', level: 'A2', unit: 6, learned: false },
+  { id: 'u6-4', english: 'climb', turkish: 'tırmanmak', example: 'We climbed the mountain.', level: 'A2', unit: 6, learned: false },
+  { id: 'u6-5', english: 'cave', turkish: 'mağara', example: 'We found a cave in the forest.', level: 'A2', unit: 6, learned: false },
+  { id: 'u6-6', english: 'trail', turkish: 'patika', example: 'We followed the trail in the woods.', level: 'B1', unit: 6, learned: false },
+  { id: 'u6-7', english: 'camping', turkish: 'kamp yapma', example: 'We went camping last weekend.', level: 'A1', unit: 6, learned: false },
+  { id: 'u6-8', english: 'backpack', turkish: 'sırt çantası', example: 'Pack your backpack for the trip.', level: 'A2', unit: 6, learned: false },
+  { id: 'u6-9', english: 'compass', turkish: 'pusula', example: 'Use a compass to find your way.', level: 'A2', unit: 6, learned: false },
+  { id: 'u6-10', english: 'survive', turkish: 'hayatta kalmak', example: 'He survived the storm.', level: 'B1', unit: 6, learned: false },
+  { id: 'u6-11', english: 'bungee jumping', turkish: 'bungee atlayışı', example: 'Bungee jumping is very exciting.', level: 'A2', unit: 6, learned: false },
+  { id: 'u6-12', english: 'rafting', turkish: 'rafting', example: 'We went rafting on the river.', level: 'A2', unit: 6, learned: false },
+  { id: 'u6-13', english: 'scary', turkish: 'korkutucu', example: 'The dark cave was scary.', level: 'A2', unit: 6, learned: false },
+  { id: 'u6-14', english: 'brave', turkish: 'cesur', example: 'She is a brave girl.', level: 'A2', unit: 6, learned: false },
+  { id: 'u6-15', english: 'dangerous', turkish: 'tehlikeli', example: 'Mountain climbing can be dangerous.', level: 'A2', unit: 6, learned: false },
+  { id: 'u6-16', english: 'experience', turkish: 'deneyim', example: 'It was an amazing experience.', level: 'A2', unit: 6, learned: false },
+  { id: 'u6-17', english: 'expedition', turkish: 'keşif gezisi', example: 'They went on an expedition to the jungle.', level: 'B1', unit: 6, learned: false },
+  { id: 'u6-18', english: 'parachute', turkish: 'paraşüt', example: 'He jumped with a parachute.', level: 'A2', unit: 6, learned: false },
+  { id: 'u6-19', english: 'challenge', turkish: 'meydan okuma', example: 'Climbing Everest is a big challenge.', level: 'A2', unit: 6, learned: false },
+  { id: 'u6-20', english: 'rescue', turkish: 'kurtarmak', example: 'The team rescued the climbers.', level: 'A2', unit: 6, learned: false },
+
+  // ===== UNIT 7: TOURISM =====
+  { id: 'u7-1', english: 'tourist', turkish: 'turist', example: 'Many tourists visit Istanbul.', level: 'A1', unit: 7, learned: false },
+  { id: 'u7-2', english: 'sightseeing', turkish: 'gezi, tur', example: 'We went sightseeing in Rome.', level: 'A2', unit: 7, learned: false },
+  { id: 'u7-3', english: 'destination', turkish: 'gidilecek yer', example: 'Paris is a popular destination.', level: 'A2', unit: 7, learned: false },
+  { id: 'u7-4', english: 'accommodation', turkish: 'konaklama', example: 'We booked accommodation near the beach.', level: 'B1', unit: 7, learned: false },
+  { id: 'u7-5', english: 'reservation', turkish: 'rezervasyon', example: 'I made a hotel reservation.', level: 'A2', unit: 7, learned: false },
+  { id: 'u7-6', english: 'flight', turkish: 'uçuş', example: 'Our flight is at 8 am.', level: 'A2', unit: 7, learned: false },
+  { id: 'u7-7', english: 'luggage', turkish: 'bagaj', example: 'Don\'t forget your luggage.', level: 'A2', unit: 7, learned: false },
+  { id: 'u7-8', english: 'passport', turkish: 'pasaport', example: 'You need a passport to travel abroad.', level: 'A1', unit: 7, learned: false },
+  { id: 'u7-9', english: 'guidebook', turkish: 'gezi rehberi', example: 'Buy a guidebook before the trip.', level: 'A2', unit: 7, learned: false },
+  { id: 'u7-10', english: 'monument', turkish: 'anıt', example: 'We visited a famous monument.', level: 'A2', unit: 7, learned: false },
+  { id: 'u7-11', english: 'historical', turkish: 'tarihi', example: 'This is a historical place.', level: 'A2', unit: 7, learned: false },
+  { id: 'u7-12', english: 'ancient', turkish: 'antik, eski', example: 'Ancient ruins are fascinating.', level: 'B1', unit: 7, learned: false },
+  { id: 'u7-13', english: 'scenery', turkish: 'manzara', example: 'The scenery is breathtaking.', level: 'A2', unit: 7, learned: false },
+  { id: 'u7-14', english: 'souvenir', turkish: 'hatıra, hediyelik eşya', example: 'I bought a souvenir for my mom.', level: 'A2', unit: 7, learned: false },
+  { id: 'u7-15', english: 'abroad', turkish: 'yurt dışı', example: 'Have you ever been abroad?', level: 'A2', unit: 7, learned: false },
+  { id: 'u7-16', english: 'currency', turkish: 'para birimi', example: 'What is the local currency?', level: 'B1', unit: 7, learned: false },
+  { id: 'u7-17', english: 'customs', turkish: 'gümrük', example: 'We passed through customs quickly.', level: 'B1', unit: 7, learned: false },
+  { id: 'u7-18', english: 'embassy', turkish: 'büyükelçilik', example: 'Go to the embassy for your visa.', level: 'B1', unit: 7, learned: false },
+  { id: 'u7-19', english: 'brochure', turkish: 'broşür', example: 'I picked up a travel brochure.', level: 'A2', unit: 7, learned: false },
+  { id: 'u7-20', english: 'itinerary', turkish: 'seyahat planı', example: 'Check the itinerary for tomorrow.', level: 'B1', unit: 7, learned: false },
+
+  // ===== UNIT 8: CHORES =====
+  { id: 'u8-1', english: 'chore', turkish: 'ev işi', example: 'Doing chores is everyone\'s responsibility.', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-2', english: 'vacuum', turkish: 'süpürmek (elektrikli)', example: 'I vacuum the living room.', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-3', english: 'sweep', turkish: 'süpürmek', example: 'Sweep the kitchen floor.', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-4', english: 'mop', turkish: 'paspas yapmak', example: 'Mop the floor after sweeping.', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-5', english: 'do the laundry', turkish: 'çamaşır yıkamak', example: 'I do the laundry on weekends.', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-6', english: 'iron', turkish: 'ütü yapmak', example: 'I iron my school uniform.', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-7', english: 'do the dishes', turkish: 'bulaşık yıkamak', example: 'It\'s your turn to do the dishes.', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-8', english: 'take out the trash', turkish: 'çöpü çıkarmak', example: 'Please take out the trash.', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-9', english: 'tidy up', turkish: 'toplamak, düzenlemek', example: 'Tidy up your room before bed.', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-10', english: 'dust', turkish: 'toz almak', example: 'I dust the furniture every week.', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-11', english: 'set the table', turkish: 'sofra kurmak', example: 'Can you set the table for dinner?', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-12', english: 'clear the table', turkish: 'sofrayı toplamak', example: 'Clear the table after eating.', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-13', english: 'feed', turkish: 'beslemek', example: 'I feed the cat every morning.', level: 'A1', unit: 8, learned: false },
+  { id: 'u8-14', english: 'water the plants', turkish: 'çiçekleri sulamak', example: 'Don\'t forget to water the plants.', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-15', english: 'make the bed', turkish: 'yatak yapmak', example: 'I make my bed every morning.', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-16', english: 'hang up', turkish: 'asmak (çamaşır)', example: 'Hang up the clothes to dry.', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-17', english: 'responsibility', turkish: 'sorumluluk', example: 'It\'s our responsibility to help at home.', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-18', english: 'messy', turkish: 'dağınık', example: 'Your room is so messy!', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-19', english: 'neat', turkish: 'düzenli, temiz', example: 'Keep your desk neat.', level: 'A2', unit: 8, learned: false },
+  { id: 'u8-20', english: 'grocery shopping', turkish: 'market alışverişi', example: 'I go grocery shopping with my mom.', level: 'A2', unit: 8, learned: false },
+
+  // ===== UNIT 9: SCIENCE =====
+  { id: 'u9-1', english: 'science', turkish: 'bilim', example: 'Science helps us understand the world.', level: 'A1', unit: 9, learned: false },
+  { id: 'u9-2', english: 'experiment', turkish: 'deney', example: 'We did an experiment in the lab.', level: 'A2', unit: 9, learned: false },
+  { id: 'u9-3', english: 'laboratory', turkish: 'laboratuvar', example: 'The laboratory has modern equipment.', level: 'A2', unit: 9, learned: false },
+  { id: 'u9-4', english: 'research', turkish: 'araştırma', example: 'Scientists do a lot of research.', level: 'A2', unit: 9, learned: false },
+  { id: 'u9-5', english: 'invent', turkish: 'icat etmek', example: 'Edison invented the light bulb.', level: 'A2', unit: 9, learned: false },
+  { id: 'u9-6', english: 'invention', turkish: 'icat', example: 'The telephone was a great invention.', level: 'A2', unit: 9, learned: false },
+  { id: 'u9-7', english: 'scientist', turkish: 'bilim insanı', example: 'She wants to be a scientist.', level: 'A2', unit: 9, learned: false },
+  { id: 'u9-8', english: 'technology', turkish: 'teknoloji', example: 'Technology makes life easier.', level: 'A1', unit: 9, learned: false },
+  { id: 'u9-9', english: 'microscope', turkish: 'mikroskop', example: 'We used a microscope in biology class.', level: 'A2', unit: 9, learned: false },
+  { id: 'u9-10', english: 'telescope', turkish: 'teleskop', example: 'We looked at stars with a telescope.', level: 'A2', unit: 9, learned: false },
+  { id: 'u9-11', english: 'gravity', turkish: 'yerçekimi', example: 'Newton discovered gravity.', level: 'B1', unit: 9, learned: false },
+  { id: 'u9-12', english: 'planet', turkish: 'gezegen', example: 'Mars is the red planet.', level: 'A1', unit: 9, learned: false },
+  { id: 'u9-13', english: 'solar system', turkish: 'güneş sistemi', example: 'There are 8 planets in our solar system.', level: 'A2', unit: 9, learned: false },
+  { id: 'u9-14', english: 'energy', turkish: 'enerji', example: 'Solar energy is renewable.', level: 'A2', unit: 9, learned: false },
+  { id: 'u9-15', english: 'atom', turkish: 'atom', example: 'Everything is made of atoms.', level: 'A2', unit: 9, learned: false },
+  { id: 'u9-16', english: 'molecule', turkish: 'molekül', example: 'Water is a molecule.', level: 'B1', unit: 9, learned: false },
+  { id: 'u9-17', english: 'hypothesis', turkish: 'hipotez', example: 'We need to test our hypothesis.', level: 'B1', unit: 9, learned: false },
+  { id: 'u9-18', english: 'observe', turkish: 'gözlemlemek', example: 'Observe the changes carefully.', level: 'A2', unit: 9, learned: false },
+  { id: 'u9-19', english: 'conclusion', turkish: 'sonuç', example: 'What is your conclusion?', level: 'A2', unit: 9, learned: false },
+  { id: 'u9-20', english: 'theory', turkish: 'teori', example: 'Einstein\'s theory is famous.', level: 'B1', unit: 9, learned: false },
+
+  // ===== UNIT 10: NATURAL FORCES =====
+  { id: 'u10-1', english: 'earthquake', turkish: 'deprem', example: 'Turkey had a big earthquake.', level: 'A2', unit: 10, learned: false },
+  { id: 'u10-2', english: 'flood', turkish: 'sel', example: 'The flood destroyed many houses.', level: 'A2', unit: 10, learned: false },
+  { id: 'u10-3', english: 'tornado', turkish: 'hortum, kasırga', example: 'The tornado was very powerful.', level: 'A2', unit: 10, learned: false },
+  { id: 'u10-4', english: 'tsunami', turkish: 'tsunami', example: 'A tsunami hit the coast.', level: 'A2', unit: 10, learned: false },
+  { id: 'u10-5', english: 'volcano', turkish: 'yanardağ', example: 'The volcano erupted last year.', level: 'A2', unit: 10, learned: false },
+  { id: 'u10-6', english: 'eruption', turkish: 'patlama (yanardağ)', example: 'The eruption caused damage.', level: 'B1', unit: 10, learned: false },
+  { id: 'u10-7', english: 'drought', turkish: 'kuraklık', example: 'The drought lasted for months.', level: 'B1', unit: 10, learned: false },
+  { id: 'u10-8', english: 'landslide', turkish: 'heyelan', example: 'The heavy rain caused a landslide.', level: 'B1', unit: 10, learned: false },
+  { id: 'u10-9', english: 'hurricane', turkish: 'kasırga', example: 'The hurricane caused a lot of damage.', level: 'A2', unit: 10, learned: false },
+  { id: 'u10-10', english: 'avalanche', turkish: 'çığ', example: 'An avalanche blocked the road.', level: 'B1', unit: 10, learned: false },
+  { id: 'u10-11', english: 'disaster', turkish: 'felaket', example: 'The earthquake was a terrible disaster.', level: 'A2', unit: 10, learned: false },
+  { id: 'u10-12', english: 'damage', turkish: 'hasar', example: 'The storm caused a lot of damage.', level: 'A2', unit: 10, learned: false },
+  { id: 'u10-13', english: 'destroy', turkish: 'yıkmak, tahrip etmek', example: 'The fire destroyed the building.', level: 'A2', unit: 10, learned: false },
+  { id: 'u10-14', english: 'survivor', turkish: 'kurtulan kişi', example: 'The survivors were rescued.', level: 'A2', unit: 10, learned: false },
+  { id: 'u10-15', english: 'shelter', turkish: 'sığınak', example: 'People went to the shelter.', level: 'A2', unit: 10, learned: false },
+  { id: 'u10-16', english: 'emergency', turkish: 'acil durum', example: 'Call 112 in an emergency.', level: 'A2', unit: 10, learned: false },
+  { id: 'u10-17', english: 'warning', turkish: 'uyarı', example: 'There was a storm warning on TV.', level: 'A2', unit: 10, learned: false },
+  { id: 'u10-18', english: 'evacuate', turkish: 'tahliye etmek', example: 'We had to evacuate the building.', level: 'B1', unit: 10, learned: false },
+  { id: 'u10-19', english: 'collapse', turkish: 'çökmek', example: 'The building collapsed after the earthquake.', level: 'B1', unit: 10, learned: false },
+  { id: 'u10-20', english: 'relief', turkish: 'yardım (afet)', example: 'Relief teams arrived quickly.', level: 'B1', unit: 10, learned: false },
 ];
 
 interface VocabularyViewProps {
@@ -141,6 +311,7 @@ const HangmanFigure = ({ wrongGuesses }: { wrongGuesses: number }) => {
 export function VocabularyView({ onBack }: VocabularyViewProps) {
   const { user } = useAuth();
   const [words, setWords] = useState<Word[]>(INITIAL_WORDS);
+  const [selectedUnit, setSelectedUnit] = useState<number | null>(null);
   const [view, setView] = useState<'menu' | 'add' | 'study' | 'game' | 'hangman'>('menu');
   const [newWord, setNewWord] = useState({ english: '', turkish: '', example: '', level: 'A1' as 'A1' | 'A2' | 'B1' });
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -167,8 +338,11 @@ export function VocabularyView({ onBack }: VocabularyViewProps) {
   const [wrongGuesses, setWrongGuesses] = useState(0);
   const maxWrongGuesses = 6;
 
-  const learnedCount = words.filter(w => w.learned).length;
-  const progressPercent = (learnedCount / words.length) * 100;
+  // Filter words by selected unit
+  const filteredWords = selectedUnit ? words.filter(w => w.unit === selectedUnit) : words;
+
+  const learnedCount = filteredWords.filter(w => w.learned).length;
+  const progressPercent = (learnedCount / filteredWords.length) * 100;
 
   // Add new word
   const handleAddWord = () => {
@@ -183,6 +357,7 @@ export function VocabularyView({ onBack }: VocabularyViewProps) {
       turkish: newWord.turkish.trim(),
       example: newWord.example.trim(),
       level: newWord.level,
+      unit: selectedUnit || 1,
       learned: false
     };
 
@@ -194,7 +369,7 @@ export function VocabularyView({ onBack }: VocabularyViewProps) {
 
   // Study: Mark as learned/unknown
   const handleKnowWord = (know: boolean) => {
-    const currentWord = words[currentWordIndex];
+    const currentWord = filteredWords[currentWordIndex];
 
     if (know) {
       // Biliyorum - işaretle ve sonraki kelimeye geç
@@ -209,7 +384,7 @@ export function VocabularyView({ onBack }: VocabularyViewProps) {
   };
 
   const handleLearnWord = async () => {
-    const currentWord = words[currentWordIndex];
+    const currentWord = filteredWords[currentWordIndex];
     setWords(words.map(w => w.id === currentWord.id ? { ...w, learned: true } : w));
     toast.success('Kelime defterine eklendi! 📝');
 
@@ -227,7 +402,7 @@ export function VocabularyView({ onBack }: VocabularyViewProps) {
   };
 
   const nextWord = () => {
-    if (currentWordIndex < words.length - 1) {
+    if (currentWordIndex < filteredWords.length - 1) {
       setCurrentWordIndex(currentWordIndex + 1);
       setShowMeaning(false);
     } else {
@@ -239,7 +414,7 @@ export function VocabularyView({ onBack }: VocabularyViewProps) {
 
   // Start matching game
   const startMatchingGame = () => {
-    const shuffled = [...words].sort(() => Math.random() - 0.5).slice(0, 6);
+    const shuffled = [...filteredWords].sort(() => Math.random() - 0.5).slice(0, 6);
     setGameWords(shuffled);
     setGameScore(0);
     setSelectedWords([]);
@@ -324,7 +499,7 @@ export function VocabularyView({ onBack }: VocabularyViewProps) {
 
   // Start hangman
   const startHangman = () => {
-    const randomWord = words[Math.floor(Math.random() * words.length)];
+    const randomWord = filteredWords[Math.floor(Math.random() * filteredWords.length)];
     setHangmanWord(randomWord);
     setGuessedLetters([]);
     setWrongGuesses(0);
@@ -380,7 +555,7 @@ export function VocabularyView({ onBack }: VocabularyViewProps) {
               </div>
               <div>
                 <h2 className="font-bold">İngilizce Kelime Defteri</h2>
-                <p className="text-xs text-muted-foreground">{words.length} kelime · A1-A2 seviye</p>
+                <p className="text-xs text-muted-foreground">{filteredWords.length} kelime · {selectedUnit ? `Ünite ${selectedUnit}` : 'Tüm üniteler'}</p>
               </div>
             </div>
           </div>
@@ -392,11 +567,41 @@ export function VocabularyView({ onBack }: VocabularyViewProps) {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">İlerleme</span>
-                <span className="text-sm font-bold text-primary">{learnedCount}/{words.length} kelime</span>
+                <span className="text-sm font-bold text-primary">{learnedCount}/{filteredWords.length} kelime</span>
               </div>
               <Progress value={progressPercent} className="h-3" />
             </CardContent>
           </Card>
+
+          {/* Unit Filter */}
+          <div className="overflow-x-auto pb-1 -mx-4 px-4">
+            <div className="flex gap-2 min-w-max">
+              <Button
+                variant={selectedUnit === null ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => { setSelectedUnit(null); setCurrentWordIndex(0); }}
+                className="shrink-0"
+              >
+                Tümü ({words.length})
+              </Button>
+              {Object.entries(UNIT_NAMES).map(([num, name]) => {
+                const unitNum = Number(num);
+                const unitWordCount = words.filter(w => w.unit === unitNum).length;
+                const unitLearnedCount = words.filter(w => w.unit === unitNum && w.learned).length;
+                return (
+                  <Button
+                    key={unitNum}
+                    variant={selectedUnit === unitNum ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => { setSelectedUnit(unitNum); setCurrentWordIndex(0); }}
+                    className="shrink-0"
+                  >
+                    {unitNum}. {name} ({unitLearnedCount}/{unitWordCount})
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
 
           {/* Menu Options */}
           <div className="grid gap-3">
@@ -579,7 +784,13 @@ export function VocabularyView({ onBack }: VocabularyViewProps) {
   }
 
   if (view === 'study') {
-    const currentWord = words[currentWordIndex];
+    const currentWord = filteredWords[currentWordIndex];
+
+    if (!currentWord) {
+      setView('menu');
+      setCurrentWordIndex(0);
+      return null;
+    }
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
@@ -589,10 +800,10 @@ export function VocabularyView({ onBack }: VocabularyViewProps) {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex-1">
-              <h2 className="font-bold">Kelime Çalışması</h2>
-              <Progress value={(currentWordIndex / words.length) * 100} className="h-2 mt-1" />
+              <h2 className="font-bold">Kelime Çalışması{selectedUnit ? ` - ${UNIT_NAMES[selectedUnit]}` : ''}</h2>
+              <Progress value={(currentWordIndex / filteredWords.length) * 100} className="h-2 mt-1" />
             </div>
-            <span className="text-sm font-medium">{currentWordIndex + 1}/{words.length}</span>
+            <span className="text-sm font-medium">{currentWordIndex + 1}/{filteredWords.length}</span>
           </div>
         </div>
 

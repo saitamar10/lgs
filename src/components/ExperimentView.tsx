@@ -201,37 +201,33 @@ export function ExperimentView({ unitId, unitName, subjectName, onComplete, onEx
       <div className="sticky top-0 z-10 bg-card border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={onExit}>
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <Button variant="ghost" size="icon" onClick={onExit} className="shrink-0">
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <Beaker className="w-5 h-5 text-info" />
-                  <h1 className="text-lg font-bold">{unitName}</h1>
+                  <Beaker className="w-5 h-5 text-info shrink-0" />
+                  <h1 className="text-lg font-bold truncate">{unitName}</h1>
                 </div>
-                <p className="text-sm text-muted-foreground">{subjectName}</p>
+                <p className="text-sm text-muted-foreground truncate">{subjectName}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0 ml-2">
               <Button
-                variant={isFullscreen ? "destructive" : "outline"}
-                size="sm"
+                variant={isFullscreen ? "destructive" : "default"}
+                size="icon"
                 onClick={toggleFullscreen}
+                className="w-10 h-10"
+                title={isFullscreen ? "Tam Ekrandan Çık" : "Tam Ekran"}
               >
                 {isFullscreen ? (
-                  <>
-                    <Minimize2 className="w-4 h-4 mr-2" />
-                    Tam Ekrandan Çık
-                  </>
+                  <Minimize2 className="w-5 h-5" />
                 ) : (
-                  <>
-                    <Maximize2 className="w-4 h-4 mr-2" />
-                    Tam Ekran
-                  </>
+                  <Maximize2 className="w-5 h-5" />
                 )}
               </Button>
-              <Badge variant="outline">
+              <Badge variant="outline" className="hidden sm:inline-flex">
                 {currentStep + 1} / {experiment.length}
               </Badge>
             </div>

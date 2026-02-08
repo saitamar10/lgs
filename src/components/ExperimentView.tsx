@@ -128,17 +128,24 @@ export function ExperimentView({ unitId, unitName, subjectName, onComplete, onEx
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().then(() => {
         setIsFullscreen(true);
-        toast.success('Tam ekran modu açıldı');
       }).catch(() => {
         toast.error('Tam ekran modu desteklenmiyor');
       });
     } else {
       document.exitFullscreen().then(() => {
         setIsFullscreen(false);
-        toast.info('Tam ekran modundan çıkıldı');
       });
     }
   };
+
+  // Sync fullscreen state when user presses ESC or exits fullscreen externally
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   if (isLoading) {
     return (
@@ -208,15 +215,14 @@ export function ExperimentView({ unitId, unitName, subjectName, onComplete, onEx
             </div>
             <div className="flex items-center gap-2">
               <Button
-                variant="outline"
+                variant={isFullscreen ? "destructive" : "outline"}
                 size="sm"
                 onClick={toggleFullscreen}
-                className="hidden md:flex"
               >
                 {isFullscreen ? (
                   <>
                     <Minimize2 className="w-4 h-4 mr-2" />
-                    Çıkış
+                    Tam Ekrandan Çık
                   </>
                 ) : (
                   <>
@@ -277,25 +283,6 @@ export function ExperimentView({ unitId, unitName, subjectName, onComplete, onEx
                       <Beaker className="w-5 h-5" />
                       <h3 className="font-bold">🎮 3D Simülasyon</h3>
                     </div>
-                    {/* Mobile Fullscreen Button */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={toggleFullscreen}
-                      className="md:hidden"
-                    >
-                      {isFullscreen ? (
-                        <>
-                          <Minimize2 className="w-4 h-4 mr-2" />
-                          Normal
-                        </>
-                      ) : (
-                        <>
-                          <Maximize2 className="w-4 h-4 mr-2" />
-                          Tam Ekran
-                        </>
-                      )}
-                    </Button>
                   </div>
                   <div className="rounded-xl bg-background border-4 border-primary/30 overflow-hidden" style={{ height: isFullscreen ? '100vh' : '650px', minHeight: '350px' }}>
                     <Suspense fallback={

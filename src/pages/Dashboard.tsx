@@ -239,7 +239,7 @@ export function Dashboard() {
         subjectName,
         unitName,
         difficulty: difficultyMap[difficulty],
-        count: difficulty === 'exam' ? 10 : 5
+        count: difficulty === 'easy' ? 5 : difficulty === 'medium' ? 10 : difficulty === 'hard' ? 12 : 15
       });
 
       if (questions.length > 0) {
@@ -424,7 +424,7 @@ export function Dashboard() {
         subjectName,
         unitName,
         difficulty: difficultyMap[difficulty as Difficulty],
-        count: 5
+        count: difficulty === 'easy' ? 5 : difficulty === 'medium' ? 10 : difficulty === 'hard' ? 12 : 15
       });
 
       if (questions.length > 0) {
@@ -487,7 +487,7 @@ export function Dashboard() {
         subjectName,
         unitName,
         difficulty: difficultyMap[difficulty as Difficulty],
-        count: 5
+        count: difficulty === 'easy' ? 5 : difficulty === 'medium' ? 10 : difficulty === 'hard' ? 12 : 15
       });
 
       if (questions.length > 0) {

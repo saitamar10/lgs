@@ -246,6 +246,9 @@ export function QuizScreen({
       {/* Question - use displayedQuestion during result phase to show correct question */}
       <div className="max-w-2xl mx-auto p-4 pb-36 overflow-y-auto">
         <div className="mb-8 animate-slide-up" key={(displayedQuestion || currentQuestion).id + currentIndex}>
+          <p className="text-sm font-semibold text-primary mb-2">
+            Soru {answeredCorrectly.size + (showResult && lastAnswerWasCorrect ? 0 : 1)}/{questions.length}
+          </p>
           <h2 className="text-xl md:text-2xl font-bold text-foreground">
             <MathText>{(displayedQuestion || currentQuestion).question_text}</MathText>
           </h2>

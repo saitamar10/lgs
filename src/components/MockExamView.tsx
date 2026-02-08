@@ -779,19 +779,24 @@ export function MockExamView({ onBack }: MockExamViewProps) {
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
           {/* PDF Viewer */}
           <div className="flex-1 h-[50vh] lg:h-auto border-b lg:border-b-0 lg:border-r border-border relative">
-            {/* Mobile: Embed PDF via Google Docs Viewer (works on all mobile browsers) */}
+            {/* PDF iframe - works on modern mobile browsers */}
             <iframe
-              src={`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(currentPdfUrl)}`}
-              className="w-full h-full lg:hidden"
+              src={`${currentPdfUrl}#toolbar=1&navpanes=0`}
+              className="w-full h-full"
               title="Sınav PDF"
               allowFullScreen
             />
-            {/* Desktop: Show PDF in native iframe */}
-            <iframe
-              src={`${currentPdfUrl}#toolbar=1&navpanes=0`}
-              className="w-full h-full hidden lg:block"
-              title="Sınav PDF"
-            />
+            {/* Fallback link if iframe doesn't render PDF on some mobile devices */}
+            <div className="absolute bottom-2 right-2 lg:hidden">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="shadow-lg text-xs opacity-80"
+                onClick={() => window.open(currentPdfUrl, '_blank')}
+              >
+                PDF görünmüyorsa tıkla
+              </Button>
+            </div>
           </div>
 
           {/* Answer Grid */}

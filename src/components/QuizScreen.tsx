@@ -10,8 +10,7 @@ import { cn } from '@/lib/utils';
 import { X, Heart, Zap, Clock, PenLine } from 'lucide-react';
 import { Whiteboard } from './Whiteboard';
 import { toast } from 'sonner';
-import mascotHappy from '@/assets/mascot.png';
-import mascotEncouraging from '@/assets/mascot-encouraging.png';
+import { Mascot } from '@/components/Mascot';
 
 interface QuizScreenProps {
   questions: Question[];
@@ -75,6 +74,9 @@ export function QuizScreen({
   const currentQuestion = questionQueue[currentIndex];
   // Use lastAnswerWasCorrect for UI when showing result
   const isCorrect = showResult ? lastAnswerWasCorrect : false;
+
+  // Mascot mood based on quiz state
+  const mascotMood = !showResult ? 'thinking' : lastAnswerWasCorrect ? 'celebrating' : 'encouraging';
 
   // Calculate progress based on how many unique questions answered correctly
   const progress = useMemo(() => {
@@ -245,24 +247,41 @@ export function QuizScreen({
 
       {/* Question - use displayedQuestion during result phase to show correct question */}
       <div className="max-w-2xl mx-auto p-4 pb-36 overflow-y-auto">
-        <div className="mb-8 animate-slide-up" key={(displayedQuestion || currentQuestion).id + currentIndex}>
-          <p className="text-sm font-semibold text-primary mb-2">
-            Soru {answeredCorrectly.size + (showResult && lastAnswerWasCorrect ? 0 : 1)}/{questions.length}
-          </p>
-          <h2 className="text-xl md:text-2xl font-bold text-foreground">
-            <MathText>{(displayedQuestion || currentQuestion).question_text}</MathText>
-          </h2>
-          
-          {/* Question Image (for math/geometry questions) */}
-          {(displayedQuestion || currentQuestion as any).image_url && (
-            <div className="mt-4 flex justify-center">
-              <img 
-                src={(displayedQuestion || currentQuestion as any).image_url} 
-                alt="Soru görseli"
-                className="max-w-full max-h-64 rounded-lg border border-border"
-              />
-            </div>
-          )}
+        <div className="mb-8 animate-slide-up flex items-start gap-4" key={(displayedQuestion || currentQuestion).id + currentIndex}>
+          {/* Mascot - Duolingo style, next to question */}
+          <div className="shrink-0 hidden sm:block">
+            <Mascot
+              size="sm"
+              mood={mascotMood as 'happy' | 'thinking' | 'celebrating' | 'encouraging'}
+              message={
+                showResult
+                  ? (lastAnswerWasCorrect ? 'Harika!' : 'Tekrar dene!')
+                  : undefined
+              }
+              animate={showResult}
+            />
+          </div>
+
+          {/* Question content */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-primary mb-2">
+              Soru {answeredCorrectly.size + (showResult && lastAnswerWasCorrect ? 0 : 1)}/{questions.length}
+            </p>
+            <h2 className="text-xl md:text-2xl font-bold text-foreground">
+              <MathText>{(displayedQuestion || currentQuestion).question_text}</MathText>
+            </h2>
+
+            {/* Question Image (for math/geometry questions) */}
+            {(displayedQuestion || currentQuestion as any).image_url && (
+              <div className="mt-4 flex justify-center">
+                <img
+                  src={(displayedQuestion || currentQuestion as any).image_url}
+                  alt="Soru görseli"
+                  className="max-w-full max-h-64 rounded-lg border border-border"
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Options */}
@@ -270,9 +289,9 @@ export function QuizScreen({
           {(displayedQuestion || currentQuestion).options.map((option, index) => {
             const isSelected = selectedAnswer === index;
             const isCorrectAnswer = index === (displayedQuestion || currentQuestion).correct_answer;
-            
+
             let optionClass = "border-2 border-border bg-card hover:border-primary";
-            
+
             if (showResult) {
               if (isCorrectAnswer) {
                 optionClass = "border-2 border-success bg-success/10";
@@ -293,12 +312,18 @@ export function QuizScreen({
                   optionClass
                 )}
               >
-                <img
-                  src={isSelected ? mascotEncouraging : mascotHappy}
-                  alt=""
-                  className="w-8 h-8 object-contain shrink-0 mix-blend-multiply dark:mix-blend-screen"
-                  draggable={false}
-                />
+                <span className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 border-2 transition-colors",
+                  showResult && isCorrectAnswer
+                    ? "bg-success text-white border-success"
+                    : showResult && isSelected && !isCorrectAnswer
+                    ? "bg-destructive text-white border-destructive"
+                    : isSelected
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted text-muted-foreground border-border"
+                )}>
+                  {String.fromCharCode(65 + index)}
+                </span>
                 <MathText className="font-medium text-foreground">{option}</MathText>
               </button>
             );

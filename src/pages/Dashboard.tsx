@@ -40,6 +40,7 @@ import { SubscriptionPage } from '@/pages/SubscriptionPage';
 import { MobileChatPage } from '@/components/MobileChatPage';
 import { DesktopChatWidget } from '@/components/DesktopChatWidget';
 import { Mascot } from '@/components/Mascot';
+import { OnboardingOverlay } from '@/components/OnboardingOverlay';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { isScienceSubject } from '@/utils/subjectHelpers';
@@ -92,6 +93,7 @@ export function Dashboard() {
   const [challengeFriendName, setChallengeFriendName] = useState<string>('');
   const [completedChallengeId, setCompletedChallengeId] = useState<string | null>(null);
   const [showChallengeResults, setShowChallengeResults] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Enable challenge notifications
   useChallengeNotifications();
@@ -201,6 +203,16 @@ export function Dashboard() {
       }
     }
   }, [studyPlan, studyPlanLoading, user]);
+
+  // Show onboarding tour on first visit (after exam setup)
+  useEffect(() => {
+    if (user && !showExamSetup && !studyPlanLoading) {
+      const onboardingComplete = localStorage.getItem('onboarding_complete');
+      if (!onboardingComplete) {
+        setShowOnboarding(true);
+      }
+    }
+  }, [user, showExamSetup, studyPlanLoading]);
 
   // Auto-select first subject
   useEffect(() => {
@@ -959,6 +971,11 @@ export function Dashboard() {
             );
           }}
         />
+      )}
+
+      {/* Onboarding Tour */}
+      {showOnboarding && (
+        <OnboardingOverlay onComplete={() => setShowOnboarding(false)} />
       )}
     </div>
   );

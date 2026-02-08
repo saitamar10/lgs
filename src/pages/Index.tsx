@@ -5,6 +5,7 @@ import { Dashboard } from '@/pages/Dashboard';
 import { LandingNavbar } from '@/components/LandingNavbar';
 import { LandingFooter } from '@/components/LandingFooter';
 import { Loader2, BookOpen, Brain, Trophy, Users, Zap, Shield, Star, Target, TrendingUp, Sparkles } from 'lucide-react';
+import { Mascot } from '@/components/Mascot';
 import { Button } from '@/components/ui/button';
 
 const Index = () => {
@@ -19,12 +20,8 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="relative">
-            <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce-in">
-              <span className="text-4xl">🎓</span>
-            </div>
-          </div>
-          <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-2" />
+          <Mascot size="lg" mood="happy" animate />
+          <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mt-4 mb-2" />
           <p className="text-muted-foreground">Yükleniyor...</p>
         </div>
       </div>
@@ -48,7 +45,7 @@ const Index = () => {
               <div className="flex-1 text-center lg:text-left">
                 <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 px-4 py-2 rounded-full mb-6">
                   <Sparkles className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-semibold text-primary">AI Destekli LGS Hazırlık</span>
+                  <span className="text-sm font-semibold text-primary">AI Destekli LGSÇalış</span>
                 </div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-foreground mb-6 leading-tight tracking-tight">
                   Oyun gibi öğren,

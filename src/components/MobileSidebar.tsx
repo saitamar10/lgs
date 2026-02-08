@@ -86,7 +86,7 @@ export function MobileSidebar({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-3xl">🎓</span>
-                <SheetTitle className="text-xl font-bold text-primary">LGS Hazırlık</SheetTitle>
+                <SheetTitle className="text-xl font-bold text-primary">LGSÇalış</SheetTitle>
                 {isPremium && (
                   <Badge variant="secondary" className="text-xs bg-warning/20 text-warning">
                     <Crown className="w-3 h-3 mr-0.5" />

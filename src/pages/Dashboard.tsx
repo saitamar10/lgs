@@ -39,6 +39,7 @@ import { FriendsPage } from '@/pages/FriendsPage';
 import { SubscriptionPage } from '@/pages/SubscriptionPage';
 import { MobileChatPage } from '@/components/MobileChatPage';
 import { DesktopChatWidget } from '@/components/DesktopChatWidget';
+import { Mascot } from '@/components/Mascot';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { isScienceSubject, isHistorySubject } from '@/utils/subjectHelpers';
@@ -578,10 +579,9 @@ export function Dashboard() {
     if (isGeneratingQuestions) {
       return (
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-center animate-pulse">
-            <div className="text-6xl mb-4">🤖</div>
-            <h2 className="text-xl font-bold mb-2">Sorular Hazırlanıyor...</h2>
-            <p className="text-muted-foreground">AI yeni nesil sorular üretiyor</p>
+          <div className="text-center">
+            <Mascot size="lg" mood="thinking" message="Sorular hazırlanıyor..." animate />
+            <p className="text-muted-foreground mt-4 animate-pulse">AI yeni nesil sorular üretiyor</p>
           </div>
         </div>
       );
@@ -746,10 +746,9 @@ export function Dashboard() {
     if (isGeneratingLesson) {
       return (
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-center animate-pulse">
-            <div className="text-6xl mb-4">📚</div>
-            <h2 className="text-xl font-bold mb-2">Ders Hazırlanıyor...</h2>
-            <p className="text-muted-foreground">AI konu anlatımı oluşturuyor</p>
+          <div className="text-center">
+            <Mascot size="lg" mood="happy" message="Ders hazırlanıyor..." animate />
+            <p className="text-muted-foreground mt-4 animate-pulse">AI konu anlatımı oluşturuyor</p>
           </div>
         </div>
       );
@@ -854,7 +853,7 @@ export function Dashboard() {
                 />
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground">Bu ders için henüz ünite eklenmedi.</p>
+                  <Mascot size="md" mood="encouraging" message="Bu ders için henüz ünite eklenmedi. Yakında eklenecek!" animate />
                 </div>
               )}
             </div>
@@ -863,20 +862,14 @@ export function Dashboard() {
           {/* Loading State */}
           {subjectsLoading && (
             <div className="flex items-center justify-center min-h-[50vh]">
-              <div className="text-center">
-                <div className="text-4xl mb-4 animate-bounce">📚</div>
-                <p className="text-muted-foreground">Dersler yükleniyor...</p>
-              </div>
+              <Mascot size="lg" mood="happy" message="Dersler yükleniyor..." animate />
             </div>
           )}
 
           {/* Loading Quiz */}
           {currentView === 'quiz' && questionsLoading && (
             <div className="flex items-center justify-center min-h-[50vh]">
-              <div className="text-center">
-                <div className="text-4xl mb-4 animate-bounce">📝</div>
-                <p className="text-muted-foreground">Sorular yükleniyor...</p>
-              </div>
+              <Mascot size="lg" mood="thinking" message="Sorular yükleniyor..." animate />
             </div>
           )}
         </div>

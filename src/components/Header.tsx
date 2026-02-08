@@ -29,7 +29,7 @@ export function Header({ onNavigate, currentPage }: HeaderProps) {
             onClick={() => onNavigate?.('dashboard')}
           >
             <span className="text-2xl">🎓</span>
-            <h1 className="text-xl font-bold text-foreground hidden sm:block">LGS Hazırlık</h1>
+            <h1 className="text-xl font-bold text-foreground hidden sm:block">LGSÇalış</h1>
           </div>
 
           {user && profile && (

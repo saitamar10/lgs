@@ -79,7 +79,7 @@ export function Sidebar({
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => onNavigate('dashboard')}>
             <span className="text-3xl">🎓</span>
-            <span className="text-xl font-bold text-primary">LGS Hazırlık</span>
+            <span className="text-xl font-bold text-primary">LGSÇalış</span>
             {isPremium && (
               <Badge variant="secondary" className="ml-auto text-xs bg-warning/20 text-warning">
                 <Crown className="w-3 h-3 mr-0.5" />

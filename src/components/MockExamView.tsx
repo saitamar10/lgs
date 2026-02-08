@@ -777,30 +777,29 @@ export function MockExamView({ onBack }: MockExamViewProps) {
 
         {/* Main Content: PDF + Answer Grid */}
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-          {/* PDF Viewer */}
-          <div className="flex-1 h-[50vh] lg:h-auto border-b lg:border-b-0 lg:border-r border-border relative">
-            {/* PDF iframe - works on modern mobile browsers */}
+          {/* PDF Viewer - Desktop only (iframe) */}
+          <div className="hidden lg:block flex-1 h-auto border-r border-border relative">
             <iframe
               src={`${currentPdfUrl}#toolbar=1&navpanes=0`}
               className="w-full h-full"
               title="Sınav PDF"
-              allowFullScreen
             />
-            {/* Fallback link if iframe doesn't render PDF on some mobile devices */}
-            <div className="absolute bottom-2 right-2 lg:hidden">
-              <Button
-                variant="secondary"
-                size="sm"
-                className="shadow-lg text-xs opacity-80"
-                onClick={() => window.open(currentPdfUrl, '_blank')}
-              >
-                PDF görünmüyorsa tıkla
-              </Button>
-            </div>
+          </div>
+
+          {/* Mobile: Sticky PDF button at top + full answer grid */}
+          <div className="lg:hidden sticky top-[52px] z-10 bg-primary p-3 border-b border-border">
+            <Button
+              variant="secondary"
+              className="w-full font-bold"
+              onClick={() => window.open(currentPdfUrl, '_blank')}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Sınav PDF'ini Aç (Yeni Sekme)
+            </Button>
           </div>
 
           {/* Answer Grid */}
-          <div className="w-full lg:w-80 xl:w-96 flex flex-col">
+          <div className="w-full lg:w-80 xl:w-96 flex flex-col flex-1 lg:flex-initial">
             <ScrollArea className="flex-1">
               <div className="p-4">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">

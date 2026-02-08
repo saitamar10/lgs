@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Mascot } from '@/components/Mascot';
+import { InkilapDoodle } from '@/components/InkilapDoodles';
 import { cn } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, X, BookOpen, Lightbulb, Target, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, BookOpen, Lightbulb, Target, CheckCircle, Swords, Shield, Flag, Medal, MapPin, Crown } from 'lucide-react';
 
 interface LessonSlide {
   title: string;
@@ -30,6 +31,15 @@ const iconMap = {
   summary: CheckCircle
 };
 
+// İnkılap Tarihi için askeri semboller
+const militaryIconMap = {
+  intro: Flag,
+  concept: Shield,
+  example: Swords,
+  tip: Medal,
+  summary: Crown
+};
+
 const slideColors = {
   intro: 'from-primary/20 to-primary/5',
   concept: 'from-info/20 to-info/5',
@@ -37,6 +47,21 @@ const slideColors = {
   tip: 'from-warning/20 to-warning/5',
   summary: 'from-secondary to-secondary/50'
 };
+
+// İnkılap Tarihi için askeri tema renkleri
+const militarySlideColors = {
+  intro: 'from-red-900/20 to-red-800/5',
+  concept: 'from-amber-800/20 to-amber-700/5',
+  example: 'from-emerald-900/20 to-emerald-800/5',
+  tip: 'from-yellow-700/20 to-yellow-600/5',
+  summary: 'from-red-700/20 to-red-600/10'
+};
+
+function isInkilapSubject(subjectName: string): boolean {
+  const name = subjectName;
+  const lower = name.toLowerCase();
+  return name.includes('İnkılap') || name.includes('inkılap') || lower.includes('inkilap') || lower.includes('inkılâp') || lower.includes('nkılap');
+}
 
 export function TopicLesson({
   unitName,
@@ -51,7 +76,10 @@ export function TopicLesson({
 
   const progress = ((currentSlide + 1) / slides.length) * 100;
   const slide = slides[currentSlide];
-  const SlideIcon = iconMap[slide.icon];
+  const isMilitary = isInkilapSubject(subjectName);
+  const activeIconMap = isMilitary ? militaryIconMap : iconMap;
+  const activeSlideColors = isMilitary ? militarySlideColors : slideColors;
+  const SlideIcon = activeIconMap[slide.icon];
 
   const goToSlide = (index: number, dir: 'next' | 'prev') => {
     if (isAnimating) return;
@@ -126,12 +154,15 @@ export function TopicLesson({
           {/* Slide Card */}
           <div className={cn(
             "bg-gradient-to-br rounded-3xl p-6 md:p-8 shadow-xl border border-border",
-            slideColors[slide.icon]
+            activeSlideColors[slide.icon]
           )}>
             {/* Icon Badge */}
             <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 rounded-2xl bg-card shadow-lg flex items-center justify-center">
-                <SlideIcon className="w-8 h-8 text-primary" />
+              <div className={cn(
+                "w-16 h-16 rounded-2xl shadow-lg flex items-center justify-center",
+                isMilitary ? "bg-red-900/20 border border-red-800/30" : "bg-card"
+              )}>
+                <SlideIcon className={cn("w-8 h-8", isMilitary ? "text-red-700 dark:text-red-400" : "text-primary")} />
               </div>
             </div>
 
@@ -146,6 +177,11 @@ export function TopicLesson({
               <div className="text-lg text-muted-foreground leading-relaxed whitespace-pre-line text-left">
                 {slide.content}
               </div>
+
+              {/* İnkılap Tarihi Doodle İllüstrasyon */}
+              {isMilitary && (
+                <InkilapDoodle unitName={unitName} />
+              )}
 
               {/* Highlight Box */}
               {slide.highlight && (

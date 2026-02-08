@@ -27,6 +27,18 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    const isInkilap = subjectName.toLowerCase().includes('inkılap') || subjectName.toLowerCase().includes('inkilap');
+
+    const inkilapExtra = isInkilap ? `
+ÖZEL - İNKILAP TARİHİ KURALLARI:
+- Konuya uygun askeri terminoloji kullan (cephe, muharebe, mütareke, antlaşma, kongre, milli mücadele vb.)
+- Tarihi olayları kronolojik sıraya göre anlat
+- Önemli tarihleri ve kişileri mutlaka belirt
+- Atatürk'ün rolünü ve liderliğini vurgula
+- Slayt başlıklarında askeri/tarihi terimler kullan (örn: "Cephe Hattı", "Zafer Yolu", "Stratejik Hamle")
+- Highlight kutusunda tarihi önemi vurgula
+` : '';
+
     const systemPrompt = `Sen bir 8. sınıf LGS eğitim uzmanısın. Verilen konu için Türkçe eğitim slaytları oluşturacaksın.
 
 ÖNEMLI KURALLAR:
@@ -37,7 +49,7 @@ serve(async (req) => {
 - Her slayt kısa ve öz olmalı (max 80 kelime)
 - Gerçek matematiksel formüller ve kavramlar kullan
 - LGS tarzı örnek soru ve çözümü ekle
-
+${inkilapExtra}
 JSON formatında tam olarak 5 slayt döndür:
 1. Giriş (icon: "intro") - Konuya kısa giriş, mascotMessage: "Hadi başlayalım! 🚀"
 2. Kavram (icon: "concept") - Ana kavram ve formül, mascotMessage: "Bunu anlamak çok önemli! 📚"

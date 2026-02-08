@@ -2,7 +2,7 @@ import { Unit } from '@/hooks/useSubjects';
 import { StageProgress, Difficulty, getStageStatus, getNextStage, isUnitComplete } from '@/hooks/useStageProgress';
 import { StageNode } from './StageNode';
 import { cn } from '@/lib/utils';
-import { ChevronDown, ChevronUp, Trophy, BookOpen, Microscope } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trophy, BookOpen, Microscope, ScrollText } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -14,7 +14,9 @@ interface UnitPathProps {
   onSelectStage: (unitId: string, unitName: string, difficulty: Difficulty) => void;
   onStartLesson?: (unitId: string, unitName: string) => void;
   onStartExperiment?: (unitId: string, unitName: string) => void;
+  onStartInteractive?: (unitId: string, unitName: string) => void;
   isScienceSubject?: boolean;
+  isHistorySubject?: boolean;
   isPremium?: boolean;
 }
 
@@ -28,7 +30,9 @@ export function UnitPath({
   onSelectStage,
   onStartLesson,
   onStartExperiment,
+  onStartInteractive,
   isScienceSubject = false,
+  isHistorySubject = false,
   isPremium = false
 }: UnitPathProps) {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -146,6 +150,21 @@ export function UnitPath({
                 >
                   <Microscope className="w-4 h-4" />
                   Deneyi Yap ve Öğren 🔬
+                </Button>
+              )}
+
+              {/* Interactive Narration Button - only for history subjects */}
+              {isHistorySubject && onStartInteractive && (
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStartInteractive(unit.id, unit.name);
+                  }}
+                  variant="outline"
+                  className="gap-2 bg-red-900/10 border-red-800/30 text-red-700 dark:text-red-400 hover:bg-red-900/20 hover:border-red-800/50"
+                >
+                  <ScrollText className="w-4 h-4" />
+                  İnteraktif Anlatım
                 </Button>
               )}
             </div>

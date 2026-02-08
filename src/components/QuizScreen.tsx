@@ -7,7 +7,8 @@ import { WeakTopicNotification } from './WeakTopicNotification';
 import { Stopwatch, calculateSpeedBonus } from './Stopwatch';
 import { MathText } from '@/lib/katex';
 import { cn } from '@/lib/utils';
-import { X, Heart, Zap, Clock } from 'lucide-react';
+import { X, Heart, Zap, Clock, PenLine } from 'lucide-react';
+import { Whiteboard } from './Whiteboard';
 import { toast } from 'sonner';
 
 interface QuizScreenProps {
@@ -46,6 +47,9 @@ export function QuizScreen({
   const [timeElapsed, setTimeElapsed] = useState(0); // Kronometre - ileri sayım
   const [stopwatchActive, setStopwatchActive] = useState(true);
   const [startTime] = useState<number>(Date.now()); // Challenge start time
+
+  // Beyaz tahta (whiteboard) state
+  const [showWhiteboard, setShowWhiteboard] = useState(false);
 
   // Track mistakes per question for weak topic detection
   const [questionMistakes, setQuestionMistakes] = useState<Map<string, number>>(new Map());
@@ -301,8 +305,18 @@ export function QuizScreen({
 
       {/* Bottom Action */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4">
-        <div className="max-w-2xl mx-auto">
-          <Button 
+        <div className="max-w-2xl mx-auto flex items-center gap-2">
+          {/* Beyaz Tahta Toggle Butonu */}
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-14 w-14 shrink-0"
+            onClick={() => setShowWhiteboard(true)}
+            title="Beyaz Tahta"
+          >
+            <PenLine className="w-6 h-6" />
+          </Button>
+          <Button
             className="w-full h-14 text-lg font-bold"
             onClick={showResult ? handleContinue : handleCheck}
             disabled={selectedAnswer === null && !showResult}
@@ -311,6 +325,14 @@ export function QuizScreen({
           </Button>
         </div>
       </div>
+
+      {/* Beyaz Tahta (Whiteboard) */}
+      <Whiteboard
+        isOpen={showWhiteboard}
+        onClose={() => setShowWhiteboard(false)}
+        questionText={(displayedQuestion || currentQuestion).question_text}
+        questionId={(displayedQuestion || currentQuestion).id}
+      />
 
       {/* Weak Topic Dialog */}
       <WeakTopicNotification

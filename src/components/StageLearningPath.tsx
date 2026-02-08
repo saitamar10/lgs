@@ -9,11 +9,13 @@ interface StageLearningPathProps {
   onSelectStage: (unitId: string, unitName: string, difficulty: Difficulty) => void;
   onStartLesson?: (unitId: string, unitName: string) => void;
   onStartExperiment?: (unitId: string, unitName: string) => void;
+  onStartInteractive?: (unitId: string, unitName: string) => void;
   isScienceSubject?: boolean;
+  isHistorySubject?: boolean;
   isPremium?: boolean;
 }
 
-export function StageLearningPath({ units, progressMap, onSelectStage, onStartLesson, onStartExperiment, isScienceSubject = false, isPremium = false }: StageLearningPathProps) {
+export function StageLearningPath({ units, progressMap, onSelectStage, onStartLesson, onStartExperiment, onStartInteractive, isScienceSubject = false, isHistorySubject = false, isPremium = false }: StageLearningPathProps) {
   // Check if previous unit is complete for unlocking logic
   const isPreviousUnitComplete = (index: number): boolean => {
     // Plus users have all topics unlocked
@@ -38,7 +40,9 @@ export function StageLearningPath({ units, progressMap, onSelectStage, onStartLe
             onSelectStage={onSelectStage}
             onStartLesson={onStartLesson}
             onStartExperiment={onStartExperiment}
+            onStartInteractive={onStartInteractive}
             isScienceSubject={isScienceSubject}
+            isHistorySubject={isHistorySubject}
             isPremium={isPremium}
           />
         ))}

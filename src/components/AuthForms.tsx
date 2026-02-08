@@ -12,71 +12,47 @@ export function AuthForms() {
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [signupData, setSignupData] = useState({ email: '', password: '', displayName: '' });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
     const { error } = await signIn(loginData.email, loginData.password);
-    
     if (error) {
-      toast({
-        variant: "destructive",
-        title: "Giriş Başarısız",
-        description: error.message
-      });
-    } else {
-      toast({
-        title: "Hoş Geldin! 🎉",
-        description: "Başarıyla giriş yaptın."
-      });
+      toast({ variant: "destructive", title: "Giriş Başarısız", description: error.message });
     }
-    
     setIsLoading(false);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
     const { error } = await signUp(signupData.email, signupData.password, signupData.displayName);
-    
     if (error) {
-      toast({
-        variant: "destructive",
-        title: "Kayıt Başarısız",
-        description: error.message
-      });
-    } else {
-      toast({
-        title: "Hesap Oluşturuldu! 🎉",
-        description: "Artık öğrenmeye başlayabilirsin."
-      });
+      toast({ variant: "destructive", title: "Kayıt Başarısız", description: error.message });
     }
-    
     setIsLoading(false);
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="text-center">
-        <div className="text-4xl mb-2">🎓</div>
-        <CardTitle className="text-2xl">LGS Hazırlık</CardTitle>
-        <CardDescription>Oyun gibi öğren, sınavda başar!</CardDescription>
+    <Card className="w-full">
+      <CardHeader className="text-center pb-4">
+        <CardTitle className="text-2xl">Hemen Başla</CardTitle>
+        <CardDescription>Hesabına giriş yap veya yeni hesap oluştur</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        {/* Email/Password Tabs */}
         <Tabs defaultValue="login">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="login">Giriş Yap</TabsTrigger>
             <TabsTrigger value="signup">Kayıt Ol</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="login">
-            <form onSubmit={handleLogin} className="space-y-4 mt-4">
-              <div className="space-y-2">
+            <form onSubmit={handleLogin} className="space-y-3 mt-3">
+              <div className="space-y-1.5">
                 <Label htmlFor="login-email">E-posta</Label>
                 <Input
                   id="login-email"
@@ -87,7 +63,7 @@ export function AuthForms() {
                   required
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="login-password">Şifre</Label>
                 <Input
                   id="login-password"
@@ -104,10 +80,10 @@ export function AuthForms() {
               </Button>
             </form>
           </TabsContent>
-          
+
           <TabsContent value="signup">
-            <form onSubmit={handleSignup} className="space-y-4 mt-4">
-              <div className="space-y-2">
+            <form onSubmit={handleSignup} className="space-y-3 mt-3">
+              <div className="space-y-1.5">
                 <Label htmlFor="signup-name">Kullanıcı Adı</Label>
                 <Input
                   id="signup-name"
@@ -118,7 +94,7 @@ export function AuthForms() {
                   required
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="signup-email">E-posta</Label>
                 <Input
                   id="signup-email"
@@ -129,7 +105,7 @@ export function AuthForms() {
                   required
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="signup-password">Şifre</Label>
                 <Input
                   id="signup-password"

@@ -9,6 +9,15 @@ export function isScienceSubject(subjectId: string, subjectName: string): boolea
 }
 
 /**
+ * İnkılap Tarihi dersini tespit eder
+ */
+export function isHistorySubject(subjectId: string, subjectName: string): boolean {
+  const name = subjectName;
+  const lower = name.toLowerCase();
+  return name.includes('İnkılap') || name.includes('inkılap') || lower.includes('inkilap');
+}
+
+/**
  * Ünite adına göre deney tipini belirler
  */
 export function getExperimentTypeForUnit(unitName: string): ExperimentType {

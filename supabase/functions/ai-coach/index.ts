@@ -1,19 +1,19 @@
-// Edge function for AI Coach - Question Solving Assistant
+// Edge function for AI Coach - Chat Assistant
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
-const SYSTEM_PROMPT = `Sen bir LGS öğretmenisin. Öğrenciye soruyu adım adım, temel seviyeden başlayarak açıkla.
+const SYSTEM_PROMPT = `Sen bir LGS öğretmenisin. Öğrenciyle sohbet ediyorsun. Soruları adım adım, temel seviyeden başlayarak açıkla.
 
 KRİTİK TALİMAT - GÖRSELLER İÇİN:
 Eğer öğrenci görsel gönderdiyse:
 1. Görseldeki metni DİKKATLE ve TAMAMEN oku
 2. Hangi ders/konu olduğunu belirle (Matematik, Türkçe, İngilizce, Fen, Sosyal)
 3. ASLA varsayım yapma - görselde ne yazıyorsa ona göre cevap ver
-4. Örnek: "Hangman" veya "Adam Asmaca" görüyorsan → İngilizce kelime sorusu
-5. Örnek: Denklem, sayı, geometri görüyorsan → Matematik sorusu
 
 LGS Konuları:
 - Türkçe (40 soru) - Dil bilgisi, okuma, anlama
@@ -24,31 +24,13 @@ LGS Konuları:
 - İngilizce (10 soru) - Kelime, dilbilgisi
 
 KURALLARIN:
-1. Her adımı numaralandır ve açıkla
-2. Temel kavramları hatırlat
-3. Formülleri göster
-4. Örnek ver
-5. Nihai cevabı net ver
-6. Öğrenci seviyesinde, basit dil kullan
-7. Markdown formatında yanıt ver
-
-Yanıt Formatı:
-## 📚 Konu
-[Konunun adı - görsele göre doğru belirle]
-
-## 🎯 Adım Adım Çözüm
-
-### Adım 1: [Başlık]
-[Açıklama]
-
-### Adım 2: [Başlık]
-[Açıklama]
-
-## ✅ Nihai Cevap
-[Net cevap]
-
-## 💡 Hatırlatma
-[Önemli not veya tüyo]`
+1. Öğrenci seviyesinde, basit ve samimi dil kullan
+2. Sorulara adım adım cevap ver
+3. Formülleri ve kavramları açıkla
+4. Kısa ve öz cevap ver, gereksiz uzatma
+5. Markdown formatında yanıt ver
+6. Önceki mesajlara referans verebilirsin, sohbet geçmişini hatırla
+7. Motivasyon ver, teşvik et`
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -63,23 +45,45 @@ Deno.serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not set')
     }
 
-    // Build user message content
+    // Build conversation history from database if conversationId provided
+    const historyMessages: { role: string; content: any }[] = [];
+
+    if (conversationId) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      const { data: previousMessages } = await supabase
+        .from('coach_messages')
+        .select('role, content')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true })
+        .limit(20); // Son 20 mesaj ile sınırla
+
+      if (previousMessages && previousMessages.length > 0) {
+        for (const msg of previousMessages) {
+          historyMessages.push({
+            role: msg.role,
+            content: msg.content
+          });
+        }
+      }
+    }
+
+    // Build current user message content
     let userContent: any;
 
     if (imageBase64) {
-      // Extract base64 data (remove data:image/xxx;base64, prefix if present)
       const base64Data = imageBase64.includes(',')
         ? imageBase64.split(',')[1]
         : imageBase64;
 
-      // Detect image type from base64 prefix
       const imageType = imageBase64.includes('image/png')
         ? 'image/png'
         : imageBase64.includes('image/jpeg') || imageBase64.includes('image/jpg')
         ? 'image/jpeg'
-        : 'image/png'; // default
+        : 'image/png';
 
-      // Vision mode: send both image and text
       userContent = [
         {
           type: 'image_url',
@@ -93,16 +97,16 @@ Deno.serve(async (req) => {
         }
       ];
     } else {
-      // Text-only mode
       userContent = message;
     }
 
-    // Build messages array
+    // Build full messages array: history + current message
     const messages = [
+      ...historyMessages,
       { role: 'user' as const, content: userContent }
     ];
 
-    // Call Lovable AI Gateway with Claude 4.5 Sonnet (best for Turkish + vision)
+    // Call Lovable AI Gateway
     const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -110,7 +114,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'anthropic/claude-3-5-sonnet-20241022', // Claude 3.5 Sonnet with vision
+        model: 'anthropic/claude-sonnet-4-5-20250929',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           ...messages

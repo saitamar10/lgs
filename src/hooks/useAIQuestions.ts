@@ -39,7 +39,19 @@ export function useAIQuestions() {
       });
 
       if (fnError) {
-        throw fnError;
+        // FunctionsHttpError contains the response body with the real error
+        let errorMsg = 'Sorular üretilemedi';
+        try {
+          if (fnError.context) {
+            const errorBody = await fnError.context.json();
+            errorMsg = errorBody?.error || fnError.message || errorMsg;
+          } else if (fnError.message) {
+            errorMsg = fnError.message;
+          }
+        } catch {
+          errorMsg = fnError.message || errorMsg;
+        }
+        throw new Error(errorMsg);
       }
 
       if (data?.error) {
@@ -48,9 +60,9 @@ export function useAIQuestions() {
 
       return data?.questions || [];
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Sorular üretilemedi';
+      const message = err instanceof Error ? err.message : String(err) || 'Sorular üretilemedi';
       setError(message);
-      console.error('Failed to generate questions:', err);
+      console.error('Failed to generate questions:', message, err);
       return [];
     } finally {
       setIsGenerating(false);

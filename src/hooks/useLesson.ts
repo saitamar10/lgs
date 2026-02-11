@@ -27,7 +27,18 @@ export function useLesson() {
       });
 
       if (funcError) {
-        throw new Error(funcError.message);
+        let errorMsg = 'Ders içeriği yüklenemedi';
+        try {
+          if (funcError.context) {
+            const errorBody = await funcError.context.json();
+            errorMsg = errorBody?.error || funcError.message || errorMsg;
+          } else if (funcError.message) {
+            errorMsg = funcError.message;
+          }
+        } catch {
+          errorMsg = funcError.message || errorMsg;
+        }
+        throw new Error(errorMsg);
       }
 
       if (data.error) {

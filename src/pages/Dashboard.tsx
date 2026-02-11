@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/lib/auth';
+import { supabase } from '@/integrations/supabase/client';
 import { useSubjects, useUnits, Subject } from '@/hooks/useSubjects';
 import { useQuestions, Question } from '@/hooks/useQuiz';
 import { useAIQuestions, AIQuestion } from '@/hooks/useAIQuestions';
@@ -383,6 +384,43 @@ export function Dashboard() {
     setCurrentView(view);
   };
 
+  // Handle quick play - random subject/unit quiz against bot
+  const handleQuickPlay = async () => {
+    if (!isPremium && !hasHearts) {
+      setShowNoHeartsDialog(true);
+      return;
+    }
+
+    // Pick a random subject and unit
+    if (!subjects || subjects.length === 0) {
+      toast.error('Dersler yüklenemedi');
+      return;
+    }
+
+    const randomSubject = subjects[Math.floor(Math.random() * subjects.length)];
+    setSelectedSubject(randomSubject);
+
+    // We need units for this subject - fetch them inline
+    const { data: subjectUnits } = await supabase
+      .from('units')
+      .select('*')
+      .eq('subject_id', randomSubject.id)
+      .order('order_index');
+
+    if (!subjectUnits || subjectUnits.length === 0) {
+      toast.error('Bu ders için ünite bulunamadı');
+      return;
+    }
+
+    const randomUnit = subjectUnits[Math.floor(Math.random() * subjectUnits.length)];
+    const difficulties: Difficulty[] = ['easy', 'medium', 'hard'];
+    const randomDifficulty = difficulties[Math.floor(Math.random() * difficulties.length)];
+
+    toast.success(`${randomSubject.name} - ${randomUnit.name} (${randomDifficulty === 'easy' ? 'Kolay' : randomDifficulty === 'medium' ? 'Orta' : 'Zor'})`);
+
+    handleStartQuiz(randomUnit.id, randomUnit.name, randomDifficulty);
+  };
+
   // Handle play with friend - opens challenge dialog
   const handlePlayWithFriend = (friendId: string, friendName: string) => {
     console.log('🎮 Challenge button clicked!', { friendId, friendName });
@@ -667,6 +705,7 @@ export function Dashboard() {
           onBack={() => setCurrentView('dashboard')}
           onPlayWithFriend={handlePlayWithFriend}
           onAcceptChallenge={handleAcceptChallenge}
+          onQuickPlay={handleQuickPlay}
         />
 
         {/* Challenge Dialog */}

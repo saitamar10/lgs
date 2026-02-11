@@ -27,9 +27,10 @@ interface FriendsPageProps {
   onBack: () => void;
   onPlayWithFriend?: (friendId: string, friendName: string) => void;
   onAcceptChallenge?: (challengeId: string, unitId: string, unitName: string, subjectName: string, difficulty: string) => void;
+  onQuickPlay?: () => void;
 }
 
-export function FriendsPage({ onBack, onPlayWithFriend, onAcceptChallenge }: FriendsPageProps) {
+export function FriendsPage({ onBack, onPlayWithFriend, onAcceptChallenge, onQuickPlay }: FriendsPageProps) {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -347,6 +348,31 @@ export function FriendsPage({ onBack, onPlayWithFriend, onAcceptChallenge }: Fri
           </TabsContent>
 
           <TabsContent value="challenges" className="space-y-4 mt-4">
+            {/* Quick Play Button */}
+            <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Gamepad2 className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-base">Hızlı Oyna</p>
+                      <p className="text-sm text-muted-foreground">Rastgele konu, anında mücadele!</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="lg"
+                    className="gap-2 px-6"
+                    onClick={() => onQuickPlay?.()}
+                  >
+                    <Swords className="w-5 h-5" />
+                    Oyna
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Pending Challenges (Received) */}
             {pendingChallenges.length > 0 && (
               <div className="space-y-2">
@@ -492,13 +518,13 @@ export function FriendsPage({ onBack, onPlayWithFriend, onAcceptChallenge }: Fri
                                 <p className="font-semibold">{opponentName}</p>
                                 <p className="text-sm text-muted-foreground">{challenge.subject_name} - {challenge.unit_name}</p>
                                 <div className="mt-1 text-sm">
-                                  <span className="font-medium">{opponentScore || 0} - {myScore || 0}</span>
+                                  <span className="font-medium">{myScore || 0} - {opponentScore || 0}</span>
                                   <span className={`ml-2 ${
                                     isTie ? 'text-blue-600' :
                                     didIWin ? 'text-green-600' :
                                     'text-red-600'
                                   }`}>
-                                    {isTie ? 'Berabere' : didIWin ? 'Yendin!' : 'Seni Yendi'}
+                                    {isTie ? 'Berabere' : didIWin ? 'Kazandın!' : 'Kaybettin!'}
                                   </span>
                                 </div>
                               </div>
@@ -573,7 +599,7 @@ export function FriendsPage({ onBack, onPlayWithFriend, onAcceptChallenge }: Fri
             setSelectedChallengeId(null);
           }}
           challenge={allChallenges.find(c => c.id === selectedChallengeId)!}
-          currentUserId={allChallenges.find(c => c.id === selectedChallengeId)?.challenged_id || ''}
+          currentUserId={user?.id || ''}
           onRematch={() => {
             // Will be implemented in ADIM 6
             toast.info('Rövanş özelliği yakında eklenecek!');

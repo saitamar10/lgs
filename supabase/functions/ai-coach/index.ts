@@ -1,12 +1,45 @@
 // Edge function for AI Coach - Question Solving Assistant with Vision
+// SECURITY: JWT verified via config.toml, user authenticated via Supabase auth header
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOWED_ORIGINS = [
+  'https://lgscalis.com',
+  'https://www.lgscalis.com',
+  'https://tuascnmjgbarrtwlxzcx.supabase.co',
+  'http://localhost:8080',
+  'http://localhost:5173',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+}
+
+// Extract and verify the authenticated user from the request
+async function getAuthenticatedUser(req: Request) {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) return null;
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: authHeader } }
+  });
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return null;
+  return user;
+}
+
+const MAX_MESSAGE_LENGTH = 5000;
+const MAX_IMAGE_SIZE = 7 * 1024 * 1024; // 7MB base64 (~5MB actual)
 
 const SYSTEM_PROMPT = `Sen bir LGS öğretmenisin. Öğrenciye soruyu adım adım, temel seviyeden başlayarak açıkla.
 
@@ -37,6 +70,18 @@ const SYSTEM_PROMPT = `Sen bir LGS öğretmenisin. Öğrenciye soruyu adım adı
   8. Önceki mesajlara referans verebilirsin, sohbet geçmişini hatırla
   9. Motivasyon ver, teşvik et
 
+  ÇOK ÖNEMLİ - MATEMATİK FORMATLAMA KURALLARI:
+  - ASLA LaTeX formatı kullanma! $ işareti, \\frac, \\sqrt, \\times, \\div, \\cdot, \\left, \\right, \\text, \\boxed, \\overline, \\underline, \\hat, \\vec, \\sum, \\int, \\lim, \\infty gibi LaTeX komutları YASAKTIR.
+  - Matematiksel ifadeleri DÜZGÜN METİN olarak yaz.
+  - Kesirler için: 3/4, 1/2, 5/8 gibi yaz ($ işareti olmadan)
+  - Üs için: x², x³, 2⁴ gibi Unicode karakterler kullan veya "x üzeri 2", "2 üzeri 4" yaz
+  - Karekök için: √9 = 3 veya "karekök 9 = 3" yaz
+  - Çarpma için: × veya * kullan
+  - Bölme için: ÷ veya / kullan
+  - Pi için: π kullan
+  - Toplam, çarpım gibi ifadeleri kelimelerle yaz
+  - Özetle: Hiçbir zaman $ veya $$ işareti kullanma, hiçbir zaman ters eğik çizgi (\\) ile başlayan LaTeX komutu kullanma
+
   Yanıt Formatı:
   ## 📚 Konu
   [Konunun adı - görsele göre doğru belirle]
@@ -55,17 +100,109 @@ const SYSTEM_PROMPT = `Sen bir LGS öğretmenisin. Öğrenciye soruyu adım adı
   ## 💡 Hatırlatma
   [Önemli not veya tüyo]`;
 
+// LaTeX temizleme fonksiyonu - modelin LaTeX kullanması durumunda güvenlik ağı
+function cleanLatex(text: string): string {
+  let cleaned = text;
+  cleaned = cleaned.replace(/\$\$([\s\S]*?)\$\$/g, (_match, inner) => cleanLatexInner(inner.trim()));
+  cleaned = cleaned.replace(/\$([^$]+?)\$/g, (_match, inner) => cleanLatexInner(inner.trim()));
+  cleaned = cleanLatexInner(cleaned);
+  return cleaned;
+}
+
+function cleanLatexInner(text: string): string {
+  let cleaned = text;
+  cleaned = cleaned.replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '$1/$2');
+  cleaned = cleaned.replace(/\\sqrt\{([^}]*)\}/g, '√$1');
+  cleaned = cleaned.replace(/\\times/g, '×');
+  cleaned = cleaned.replace(/\\div/g, '÷');
+  cleaned = cleaned.replace(/\\cdot/g, '·');
+  cleaned = cleaned.replace(/\\pi/g, 'π');
+  cleaned = cleaned.replace(/\\infty/g, '∞');
+  cleaned = cleaned.replace(/\\leq/g, '≤');
+  cleaned = cleaned.replace(/\\geq/g, '≥');
+  cleaned = cleaned.replace(/\\neq/g, '≠');
+  cleaned = cleaned.replace(/\\approx/g, '≈');
+  cleaned = cleaned.replace(/\\pm/g, '±');
+  cleaned = cleaned.replace(/\^{2}/g, '²');
+  cleaned = cleaned.replace(/\^\{2\}/g, '²');
+  cleaned = cleaned.replace(/\^2/g, '²');
+  cleaned = cleaned.replace(/\^{3}/g, '³');
+  cleaned = cleaned.replace(/\^\{3\}/g, '³');
+  cleaned = cleaned.replace(/\^3/g, '³');
+  cleaned = cleaned.replace(/\^\{([^}]*)\}/g, ' üzeri $1');
+  cleaned = cleaned.replace(/\_\{([^}]*)\}/g, '$1');
+  cleaned = cleaned.replace(/\\left/g, '');
+  cleaned = cleaned.replace(/\\right/g, '');
+  cleaned = cleaned.replace(/\\text\{([^}]*)\}/g, '$1');
+  cleaned = cleaned.replace(/\\boxed\{([^}]*)\}/g, '[$1]');
+  cleaned = cleaned.replace(/\\overline\{([^}]*)\}/g, '$1');
+  cleaned = cleaned.replace(/\\underline\{([^}]*)\}/g, '$1');
+  cleaned = cleaned.replace(/\\quad/g, ' ');
+  cleaned = cleaned.replace(/\\qquad/g, '  ');
+  cleaned = cleaned.replace(/\\[,;!]/g, ' ');
+  cleaned = cleaned.replace(/\\\\/g, '\n');
+  cleaned = cleaned.replace(/\\[a-zA-Z]+\{([^}]*)\}/g, '$1');
+  cleaned = cleaned.replace(/\\[a-zA-Z]+/g, '');
+  cleaned = cleaned.replace(/\{([^}]*)\}/g, '$1');
+  return cleaned;
+}
+
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { conversationId, message, imageBase64 } = await req.json();
+    // SECURITY: Authenticate the user
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Kimlik doğrulama başarısız." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await req.json();
+    const { conversationId, message, imageBase64 } = body;
+
+    // SECURITY: Input validation
+    if (message && typeof message !== 'string') {
+      return new Response(JSON.stringify({ error: "Geçersiz mesaj formatı." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (message && message.length > MAX_MESSAGE_LENGTH) {
+      return new Response(JSON.stringify({ error: "Mesaj çok uzun." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (imageBase64 && imageBase64.length > MAX_IMAGE_SIZE) {
+      return new Response(JSON.stringify({ error: "Görsel boyutu çok büyük." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (conversationId && typeof conversationId !== 'string') {
+      return new Response(JSON.stringify({ error: "Geçersiz sohbet ID." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!lovableApiKey) {
-      throw new Error("LOVABLE_API_KEY is not set");
+      console.error("LOVABLE_API_KEY is not set");
+      return new Response(JSON.stringify({ error: "Sunucu yapılandırma hatası." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Build conversation history from database if conversationId provided
@@ -76,6 +213,20 @@ Deno.serve(async (req) => {
       const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
       const supabase = createClient(supabaseUrl, supabaseKey);
 
+      // SECURITY: Verify the conversation belongs to the authenticated user
+      const { data: conversation, error: convError } = await supabase
+        .from('coach_conversations')
+        .select('id, user_id')
+        .eq('id', conversationId)
+        .single();
+
+      if (convError || !conversation || conversation.user_id !== user.id) {
+        return new Response(JSON.stringify({ error: "Bu sohbete erişim yetkiniz yok." }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const { data: previousMessages } = await supabase
         .from('coach_messages')
         .select('role, content')
@@ -84,7 +235,6 @@ Deno.serve(async (req) => {
         .limit(20);
 
       if (previousMessages && previousMessages.length > 0) {
-        // Remove last message if it's the same user message just saved (text-only, image will be added below)
         let messagesToUse = previousMessages;
         const lastMsg = messagesToUse[messagesToUse.length - 1];
         if (lastMsg.role === 'user' && lastMsg.content === message) {
@@ -104,17 +254,18 @@ Deno.serve(async (req) => {
     let userContent: any;
 
     if (imageBase64) {
-      // Extract base64 data (remove data:image/xxx;base64, prefix if present)
       const base64Data = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
 
-      // Detect image type from base64 prefix
-      const imageType = imageBase64.includes("image/png")
-        ? "image/png"
-        : imageBase64.includes("image/jpeg") || imageBase64.includes("image/jpg")
-          ? "image/jpeg"
-          : "image/png"; // default
+      // SECURITY: Validate image type strictly
+      const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+      let imageType = "image/png";
+      for (const type of allowedTypes) {
+        if (imageBase64.includes(type)) {
+          imageType = type === "image/jpg" ? "image/jpeg" : type;
+          break;
+        }
+      }
 
-      // Vision mode: send both image and text
       userContent = [
         {
           type: "image_url",
@@ -128,17 +279,14 @@ Deno.serve(async (req) => {
         },
       ];
     } else {
-      // Text-only mode
       userContent = message;
     }
 
-    // Build full messages array: history + current message
     const messages = [
       ...historyMessages,
       { role: "user" as const, content: userContent }
     ];
 
-    // Call Lovable AI Gateway with Gemini 2.5 Pro (best for vision + Turkish)
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -170,21 +318,26 @@ Deno.serve(async (req) => {
         });
       }
 
-      throw new Error(`AI API error: ${errorText}`);
+      // SECURITY: Don't leak internal error details
+      return new Response(JSON.stringify({ error: "AI servisi şu anda kullanılamıyor." }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const aiData = await aiRes.json();
-    const response = aiData.choices[0]?.message?.content || "Üzgünüm, sorunuzu çözemedim. Lütfen tekrar deneyin.";
+    const rawResponse = aiData.choices[0]?.message?.content || "Üzgünüm, sorunuzu çözemedim. Lütfen tekrar deneyin.";
+    const response = cleanLatex(rawResponse);
 
     return new Response(JSON.stringify({ response }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("Error:", error);
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    // SECURITY: Never expose internal error messages to the client
+    return new Response(JSON.stringify({ error: "Bir hata oluştu. Lütfen tekrar deneyin." }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
 });

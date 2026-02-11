@@ -37,15 +37,15 @@ import { TodaysPlanView } from '@/components/TodaysPlanView';
 import { ExperimentView } from '@/components/ExperimentView';
 import { FriendsPage } from '@/pages/FriendsPage';
 import { SubscriptionPage } from '@/pages/SubscriptionPage';
-import { MobileChatPage } from '@/components/MobileChatPage';
-import { DesktopChatWidget } from '@/components/DesktopChatWidget';
+import { Swords } from 'lucide-react';
+import { usePendingChallenges } from '@/hooks/useFriendChallenges';
 import { Mascot } from '@/components/Mascot';
 import { OnboardingOverlay } from '@/components/OnboardingOverlay';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { isScienceSubject } from '@/utils/subjectHelpers';
 
-type View = 'dashboard' | 'units' | 'quiz' | 'complete' | 'leaderboard' | 'profile' | 'coach' | 'vocabulary' | 'mock-exam' | 'lesson' | 'todays-plan' | 'friends' | 'subscription' | 'experiment' | 'chat';
+type View = 'dashboard' | 'units' | 'quiz' | 'complete' | 'leaderboard' | 'profile' | 'coach' | 'vocabulary' | 'mock-exam' | 'lesson' | 'todays-plan' | 'friends' | 'subscription' | 'experiment';
 
 interface QuizState {
   unitId: string;
@@ -129,6 +129,7 @@ export function Dashboard() {
   const { data: allProgress } = useAllStageProgress();
   const { data: dailyTasks } = useDailyTasks();
   const { data: allChallenges = [] } = useFriendChallenges();
+  const { data: pendingChallenges = [] } = usePendingChallenges();
   const submitResult = useSubmitStageResult();
   const updateTaskProgress = useUpdateTaskProgress();
   const { generateQuestions } = useAIQuestions();
@@ -689,11 +690,6 @@ export function Dashboard() {
     return <SubscriptionPage onBack={() => setCurrentView('dashboard')} />;
   }
 
-  // Chat view
-  if (currentView === 'chat') {
-    return <MobileChatPage onBack={() => setCurrentView('dashboard')} />;
-  }
-
   // Experiment view
   if (currentView === 'experiment' && experimentState) {
     return (
@@ -898,8 +894,26 @@ export function Dashboard() {
         }}
       />
 
-      {/* Desktop Chat Widget (Facebook-style) & Mobile Chat Button */}
-      <DesktopChatWidget onOpenMobileChat={() => setCurrentView('chat')} />
+      {/* Floating Challenges Button */}
+      <div className="fixed bottom-20 right-4 md:bottom-4 md:right-4 z-40">
+        <button
+          onClick={() => {
+            setCurrentView('friends');
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('switch-to-challenges-tab'));
+            }, 100);
+          }}
+          className="relative rounded-full shadow-2xl h-14 w-14 md:h-14 md:w-auto md:px-6 bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center gap-2 transition-colors"
+        >
+          <Swords className="w-6 h-6 md:w-5 md:h-5" />
+          <span className="hidden md:inline font-medium">Mücadeleler</span>
+          {pendingChallenges.length > 0 && (
+            <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground h-5 min-w-5 flex items-center justify-center rounded-full text-xs font-bold px-1 animate-pulse">
+              {pendingChallenges.length > 9 ? '9+' : pendingChallenges.length}
+            </span>
+          )}
+        </button>
+      </div>
 
       {/* Challenge Dialog */}
       <ChallengeDialog

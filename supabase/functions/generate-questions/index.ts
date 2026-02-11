@@ -1,8 +1,39 @@
 // Edge function for AI-generated LGS questions
+// SECURITY: JWT verified via config.toml, user authenticated via Supabase auth header
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const ALLOWED_ORIGINS = [
+  'https://lgscalis.com',
+  'https://www.lgscalis.com',
+  'https://tuascnmjgbarrtwlxzcx.supabase.co',
+  'http://localhost:8080',
+  'http://localhost:5173',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  };
+}
+
+async function getAuthenticatedUser(req: Request) {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) return null;
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: authHeader } }
+  });
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return null;
+  return user;
 }
 
 const SYSTEM_PROMPT = `Sen LGS (Liselere Geçiş Sınavı) soru yazarısın. Yeni nesil, düşünme becerisine dayalı sorular üretiyorsun.
@@ -68,17 +99,76 @@ const mathImages: Record<string, string[]> = {
   ],
 }
 
+const MAX_SUBJECT_LENGTH = 100;
+const MAX_UNIT_LENGTH = 200;
+const MAX_QUESTION_COUNT = 20;
+const VALID_DIFFICULTIES = [1, 2, 3];
+
+const VALID_SUBJECTS = [
+  'matematik', 'türkçe', 'turkce', 'fen bilimleri', 'fen',
+  'inkılap tarihi', 'inkilap tarihi', 'inkılap', 'inkilap',
+  'din kültürü', 'din kulturu', 'din',
+  'ingilizce', 'english',
+  'sosyal bilgiler', 'sosyal',
+];
+
+function isValidSubject(name: string): boolean {
+  return VALID_SUBJECTS.some(s => name.toLowerCase().includes(s));
+}
+
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const { subjectName, unitName, difficulty, count = 5 }: QuestionRequest = await req.json()
+    // SECURITY: Authenticate the user
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Kimlik doğrulama başarısız." }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const body = await req.json();
+    const { subjectName, unitName, difficulty, count: rawCount } = body as QuestionRequest;
+
+    // SECURITY: Input validation
+    if (!subjectName || typeof subjectName !== 'string' || subjectName.length > MAX_SUBJECT_LENGTH) {
+      return new Response(JSON.stringify({ error: "Geçersiz ders adı." }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!unitName || typeof unitName !== 'string' || unitName.length > MAX_UNIT_LENGTH) {
+      return new Response(JSON.stringify({ error: "Geçersiz konu adı." }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!isValidSubject(subjectName)) {
+      return new Response(JSON.stringify({ error: "Geçersiz ders adı." }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // SECURITY: Validate and clamp difficulty and count
+    const validDifficulty = VALID_DIFFICULTIES.includes(difficulty) ? difficulty : 1;
+    const count = Math.min(Math.max(1, rawCount || 5), MAX_QUESTION_COUNT);
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
     if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY is not set')
+      console.error('LOVABLE_API_KEY is not set');
+      return new Response(JSON.stringify({ error: "Sunucu yapılandırma hatası." }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const difficultyLabels: Record<number, string> = {
@@ -93,17 +183,21 @@ Deno.serve(async (req) => {
       3: 25
     }
 
-    const userPrompt = `${subjectName} dersi, "${unitName}" konusu için ${count} adet ${difficultyLabels[difficulty]} seviyesinde yeni nesil LGS sorusu üret.
+    // SECURITY: Sanitize user input before injecting into prompt
+    const sanitizedSubject = subjectName.replace(/[^\w\sğüşıöçĞÜŞİÖÇ\-()]/g, '');
+    const sanitizedUnit = unitName.replace(/[^\w\sğüşıöçĞÜŞİÖÇ\-().,]/g, '');
+
+    const userPrompt = `${sanitizedSubject} dersi, "${sanitizedUnit}" konusu için ${count} adet ${difficultyLabels[validDifficulty]} seviyesinde yeni nesil LGS sorusu üret.
 
 Her soru için:
 - question_text: Soru metni (paragraf dahil)
 - options: 4 şık (string array)
 - correct_answer: Doğru cevap indexi (0-3)
 - explanation: Kısa açıklama
-- difficulty: ${difficulty}
-- xp_value: ${xpValues[difficulty]}
+- difficulty: ${validDifficulty}
+- xp_value: ${xpValues[validDifficulty]}
 
-JSON array olarak döndür: [{"question_text": "...", "options": [...], "correct_answer": 0, "explanation": "...", "difficulty": ${difficulty}, "xp_value": ${xpValues[difficulty]}}]`
+JSON array olarak döndür: [{"question_text": "...", "options": [...], "correct_answer": 0, "explanation": "...", "difficulty": ${validDifficulty}, "xp_value": ${xpValues[validDifficulty]}}]`
 
     const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -125,29 +219,35 @@ JSON array olarak döndür: [{"question_text": "...", "options": [...], "correct
     if (!aiRes.ok) {
       const error = await aiRes.text()
       console.error('AI API error:', error)
-      throw new Error(`AI API error: ${error}`)
+      // SECURITY: Don't leak internal error details
+      return new Response(
+        JSON.stringify({ error: "AI servisi şu anda kullanılamıyor.", questions: [] }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     const aiData = await aiRes.json()
     const content = aiData.choices[0]?.message?.content || '[]'
-    
+
     // Parse JSON from response
     let questions: GeneratedQuestion[] = []
     try {
-      // Try to extract JSON array from response
       const jsonMatch = content.match(/\[[\s\S]*\]/)
       if (jsonMatch) {
         questions = JSON.parse(jsonMatch[0])
       }
     } catch (parseError) {
       console.error('Failed to parse AI response:', content)
-      throw new Error('Failed to parse questions from AI')
+      return new Response(
+        JSON.stringify({ error: "Sorular ayrıştırılamadı.", questions: [] }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     // Helper to get image URL for math questions
     const getMathImage = (questionText: string, subject: string): string | undefined => {
       if (subject.toLowerCase() !== 'matematik') return undefined;
-      
+
       const text = questionText.toLowerCase();
       for (const [keyword, images] of Object.entries(mathImages)) {
         if (text.includes(keyword)) {
@@ -157,21 +257,21 @@ JSON array olarak döndür: [{"question_text": "...", "options": [...], "correct
       return undefined;
     }
 
-    // Validate and clean questions
-    questions = questions.map((q, idx) => {
+    // SECURITY: Validate, sanitize, and cap output
+    questions = questions.slice(0, MAX_QUESTION_COUNT).map((q, idx) => {
       const imageUrl = getMathImage(q.question_text || '', subjectName);
       return {
         id: `ai-${Date.now()}-${idx}`,
-        question_text: q.question_text || 'Soru yüklenemedi',
-        options: Array.isArray(q.options) && q.options.length === 4 
-          ? q.options 
+        question_text: typeof q.question_text === 'string' ? q.question_text.slice(0, 2000) : 'Soru yüklenemedi',
+        options: Array.isArray(q.options) && q.options.length === 4 && q.options.every(o => typeof o === 'string')
+          ? q.options.map(o => o.slice(0, 500))
           : ['Şık A', 'Şık B', 'Şık C', 'Şık D'],
         correct_answer: typeof q.correct_answer === 'number' && q.correct_answer >= 0 && q.correct_answer <= 3
           ? q.correct_answer
           : 0,
-        explanation: q.explanation || 'Açıklama mevcut değil',
-        difficulty: difficulty,
-        xp_value: xpValues[difficulty],
+        explanation: typeof q.explanation === 'string' ? q.explanation.slice(0, 1000) : 'Açıklama mevcut değil',
+        difficulty: validDifficulty,
+        xp_value: xpValues[validDifficulty],
         image_url: imageUrl
       };
     })
@@ -181,11 +281,11 @@ JSON array olarak döndür: [{"question_text": "...", "options": [...], "correct
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error('Error:', error)
+    // SECURITY: Never expose internal error messages
     return new Response(
-      JSON.stringify({ error: errorMessage, questions: [] }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: "Bir hata oluştu. Lütfen tekrar deneyin.", questions: [] }),
+      { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     )
   }
 })

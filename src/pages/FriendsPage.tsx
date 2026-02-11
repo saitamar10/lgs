@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, UserPlus, UserMinus, Search, ArrowLeft, Trophy, Zap, Loader2, MessageCircle, Gamepad2, Swords, Target, Timer } from 'lucide-react';
+import { Users, UserPlus, UserMinus, Search, ArrowLeft, Trophy, Zap, Loader2, Gamepad2, Swords, Target, Timer } from 'lucide-react';
 import { UserProfileDialog } from '@/components/UserProfileDialog';
 import { useAuth } from '@/lib/auth';
 import {
@@ -20,18 +20,16 @@ import {
 } from '@/hooks/useFriends';
 import { usePendingChallenges, useFriendChallenges, useAcceptChallenge, useDeclineChallenge, getChallengeWinner, formatChallengeTime } from '@/hooks/useFriendChallenges';
 import { ChallengeResultsDialog } from '@/components/ChallengeResultsDialog';
-import { useGetOrCreateConversation } from '@/hooks/useChat';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 interface FriendsPageProps {
   onBack: () => void;
-  onOpenChat?: (conversationId: string) => void;
   onPlayWithFriend?: (friendId: string, friendName: string) => void;
   onAcceptChallenge?: (challengeId: string, unitId: string, unitName: string, subjectName: string, difficulty: string) => void;
 }
 
-export function FriendsPage({ onBack, onOpenChat, onPlayWithFriend, onAcceptChallenge }: FriendsPageProps) {
+export function FriendsPage({ onBack, onPlayWithFriend, onAcceptChallenge }: FriendsPageProps) {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -65,7 +63,6 @@ export function FriendsPage({ onBack, onOpenChat, onPlayWithFriend, onAcceptChal
   const acceptRequest = useAcceptFriendRequest();
   const rejectRequest = useRejectFriendRequest();
   const removeFriend = useRemoveFriend();
-  const getOrCreateConversation = useGetOrCreateConversation();
   const acceptChallenge = useAcceptChallenge();
   const declineChallenge = useDeclineChallenge();
 
@@ -84,20 +81,6 @@ export function FriendsPage({ onBack, onOpenChat, onPlayWithFriend, onAcceptChal
 
   const handleRejectRequest = (requesterId: string) => {
     rejectRequest.mutate(requesterId);
-  };
-
-  const handleStartChat = async (friendId: string) => {
-    try {
-      const conversationId = await getOrCreateConversation.mutateAsync(friendId);
-      if (onOpenChat) {
-        onOpenChat(conversationId);
-      } else {
-        toast.success('Sohbet açılıyor...');
-      }
-    } catch (error) {
-      console.error('Failed to start chat:', error);
-      toast.error('Sohbet başlatılamadı');
-    }
   };
 
   return (
@@ -282,17 +265,6 @@ export function FriendsPage({ onBack, onOpenChat, onPlayWithFriend, onAcceptChal
                           className="bg-primary hover:bg-primary/90"
                         >
                           <Gamepad2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleStartChat(friend.id);
-                          }}
-                          disabled={getOrCreateConversation.isPending}
-                        >
-                          <MessageCircle className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="ghost"

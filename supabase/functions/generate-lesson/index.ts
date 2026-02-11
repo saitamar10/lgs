@@ -1,9 +1,40 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// Edge function for AI-generated lesson slides
+// SECURITY: JWT verified via config.toml, user authenticated via Supabase auth header
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const ALLOWED_ORIGINS = [
+  'https://lgscalis.com',
+  'https://www.lgscalis.com',
+  'https://tuascnmjgbarrtwlxzcx.supabase.co',
+  'http://localhost:8080',
+  'http://localhost:5173',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+}
+
+async function getAuthenticatedUser(req: Request) {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) return null;
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: authHeader } }
+  });
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return null;
+  return user;
+}
 
 interface LessonSlide {
   title: string;
@@ -14,17 +45,71 @@ interface LessonSlide {
   mascotMessage?: string;
 }
 
-serve(async (req) => {
+const MAX_SUBJECT_LENGTH = 100;
+const MAX_UNIT_LENGTH = 200;
+
+// Whitelist of valid subject names
+const VALID_SUBJECTS = [
+  'matematik', 'türkçe', 'turkce', 'fen bilimleri', 'fen',
+  'inkılap tarihi', 'inkilap tarihi', 'inkılap', 'inkilap',
+  'din kültürü', 'din kulturu', 'din',
+  'ingilizce', 'english',
+  'sosyal bilgiler', 'sosyal',
+];
+
+function isValidSubject(name: string): boolean {
+  return VALID_SUBJECTS.some(s => name.toLowerCase().includes(s));
+}
+
+Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { subjectName, unitName } = await req.json();
-    
+    // SECURITY: Authenticate the user
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Kimlik doğrulama başarısız." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await req.json();
+    const { subjectName, unitName } = body;
+
+    // SECURITY: Input validation
+    if (!subjectName || typeof subjectName !== 'string' || subjectName.length > MAX_SUBJECT_LENGTH) {
+      return new Response(JSON.stringify({ error: "Geçersiz ders adı." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!unitName || typeof unitName !== 'string' || unitName.length > MAX_UNIT_LENGTH) {
+      return new Response(JSON.stringify({ error: "Geçersiz konu adı." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!isValidSubject(subjectName)) {
+      return new Response(JSON.stringify({ error: "Geçersiz ders adı." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+      console.error("LOVABLE_API_KEY is not configured");
+      return new Response(JSON.stringify({ error: "Sunucu yapılandırma hatası." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const isInkilap = subjectName.toLowerCase().includes('inkılap') || subjectName.toLowerCase().includes('inkilap');
@@ -69,7 +154,11 @@ Her slayt şu formatta olmalı:
   "mascotMessage": "Maskot mesajı (ZORUNLU)"
 }`;
 
-    const userPrompt = `Ders: ${subjectName}, Konu: ${unitName} - 5 slayt oluştur, her slaytta mascotMessage olsun.`;
+    // SECURITY: Sanitize user input before injecting into prompt
+    const sanitizedSubject = subjectName.replace(/[^\w\sğüşıöçĞÜŞİÖÇ\-()]/g, '');
+    const sanitizedUnit = unitName.replace(/[^\w\sğüşıöçĞÜŞİÖÇ\-().,]/g, '');
+
+    const userPrompt = `Ders: ${sanitizedSubject}, Konu: ${sanitizedUnit} - 5 slayt oluştur, her slaytta mascotMessage olsun.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -103,20 +192,25 @@ Her slayt şu formatta olmalı:
       }
       const errorText = await response.text();
       console.error("AI Gateway error:", response.status, errorText);
-      throw new Error(`AI Gateway error: ${response.status}`);
+      return new Response(JSON.stringify({ error: "AI servisi şu anda kullanılamıyor." }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
-      throw new Error("No content received from AI");
+      return new Response(JSON.stringify({ error: "AI'dan yanıt alınamadı." }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Parse JSON from response
     let slides: LessonSlide[];
     try {
-      // Try to extract JSON array from the response
       const jsonMatch = content.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         slides = JSON.parse(jsonMatch[0]);
@@ -125,10 +219,12 @@ Her slayt şu formatta olmalı:
       }
     } catch (parseError) {
       console.error("Failed to parse AI response:", content);
-      throw new Error("Failed to parse lesson content");
+      return new Response(JSON.stringify({ error: "Ders içeriği ayrıştırılamadı." }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Default mascot messages for each slide type
     const defaultMascotMessages: Record<string, string> = {
       intro: "Hadi başlayalım! 🚀",
       concept: "Bunu anlamak çok önemli! 📚",
@@ -137,16 +233,19 @@ Her slayt şu formatta olmalı:
       summary: "Harika iş çıkardın! 🎉"
     };
 
-    // Validate and ensure all slides have required fields including mascotMessage
-    slides = slides.map((slide, index) => {
-      const icon = slide.icon || (index === 0 ? 'intro' : index === slides.length - 1 ? 'summary' : 'concept');
+    const validIcons = ['intro', 'concept', 'example', 'tip', 'summary'];
+    const validMoods = ['happy', 'thinking', 'celebrating', 'encouraging'];
+
+    slides = slides.slice(0, 10).map((slide, index) => {
+      const icon = validIcons.includes(slide.icon) ? slide.icon : (index === 0 ? 'intro' : index === slides.length - 1 ? 'summary' : 'concept');
+      const mood = validMoods.includes(slide.mascotMood || '') ? slide.mascotMood : 'happy';
       return {
-        title: slide.title || `Slayt ${index + 1}`,
-        content: slide.content || "",
-        icon,
-        highlight: slide.highlight,
-        mascotMood: slide.mascotMood || 'happy',
-        mascotMessage: slide.mascotMessage || defaultMascotMessages[icon] || "Devam et! 💪"
+        title: typeof slide.title === 'string' ? slide.title.slice(0, 200) : `Slayt ${index + 1}`,
+        content: typeof slide.content === 'string' ? slide.content.slice(0, 2000) : "",
+        icon: icon as LessonSlide['icon'],
+        highlight: typeof slide.highlight === 'string' ? slide.highlight.slice(0, 500) : undefined,
+        mascotMood: mood as LessonSlide['mascotMood'],
+        mascotMessage: typeof slide.mascotMessage === 'string' ? slide.mascotMessage.slice(0, 200) : (defaultMascotMessages[icon] || "Devam et! 💪")
       };
     });
 
@@ -156,10 +255,10 @@ Her slayt şu formatta olmalı:
   } catch (error) {
     console.error("Error generating lesson:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: "Bir hata oluştu. Lütfen tekrar deneyin." }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       }
     );
   }

@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.generate-lesson]
 verify_jwt = false
+
+[functions.create-paytr-token]
+verify_jwt = false
+
+[functions.paytr-callback]
+verify_jwt = false

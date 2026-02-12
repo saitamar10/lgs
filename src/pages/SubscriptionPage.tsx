@@ -13,11 +13,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ArrowLeft, Crown, Check, X, Zap, Heart, Users, Bot, Shield } from 'lucide-react';
+import { ArrowLeft, Crown, Check, X, Zap, Heart, Users, Bot, Shield, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { getWhatsAppPaymentUrl } from '@/config/payment';
+import { PayTRPaymentDialog } from '@/components/PayTRPaymentDialog';
 
 interface SubscriptionPageProps {
   onBack: () => void;
@@ -30,6 +30,8 @@ export function SubscriptionPage({ onBack }: SubscriptionPageProps) {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [planToUpgrade, setPlanToUpgrade] = useState<{ id: string; name: string; planType: 'plus' | 'premium' } | null>(null);
+  const [paytrToken, setPaytrToken] = useState<string | null>(null);
+  const [isLoadingPayment, setIsLoadingPayment] = useState(false);
 
   const isPremium = subscription?.plan_type !== 'free';
 
@@ -113,26 +115,38 @@ export function SubscriptionPage({ onBack }: SubscriptionPageProps) {
   const handleConfirmPayment = async () => {
     if (!planToUpgrade) return;
 
+    setIsLoadingPayment(true);
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
 
-      // WhatsApp üzerinden ödeme (sadece web'de)
-      const planName = planToUpgrade.name;
-      const price = planToUpgrade.id === 'monthly' ? '₺49' : '₺399';
-      const whatsappUrl = getWhatsAppPaymentUrl(planName, price);
+      // PayTR token al
+      const plan_type = planToUpgrade.planType === 'plus' ? 'plus' : 'premium';
 
-      toast.success('WhatsApp üzerinden ödeme için yönlendiriliyorsunuz...');
+      const { data, error } = await supabase.functions.invoke('create-paytr-token', {
+        body: { plan_type },
+      });
 
-      // WhatsApp'a yönlendir
-      window.open(whatsappUrl, '_blank');
+      if (error) throw error;
 
-      setShowPaymentDialog(false);
-      setPlanToUpgrade(null);
+      if (data?.status === 'success' && data?.token) {
+        // Sipariş ID'sini kaydet (callback sonrası doğrulama için)
+        localStorage.setItem('pending_order_id', data.merchant_oid);
+        localStorage.setItem('pending_plan_type', plan_type);
 
-    } catch (error) {
+        // PayTR iFrame'i aç
+        setPaytrToken(data.token);
+        setShowPaymentDialog(false);
+        setPlanToUpgrade(null);
+      } else {
+        throw new Error(data?.detail || data?.error || 'Token alınamadı');
+      }
+    } catch (error: any) {
       console.error('Payment error:', error);
-      toast.error('Ödeme işlemi başlatılamadı. Lütfen tekrar deneyin.');
+      toast.error(error?.message || 'Ödeme işlemi başlatılamadı. Lütfen tekrar deneyin.');
+    } finally {
+      setIsLoadingPayment(false);
     }
   };
 
@@ -449,9 +463,8 @@ export function SubscriptionPage({ onBack }: SubscriptionPageProps) {
               </div>
               <br />
               <div className="text-sm text-muted-foreground">
-                📱 <strong>Ödeme Yöntemi:</strong> WhatsApp üzerinden ödeme yapabilirsiniz.
-                <br />
-                Onayladıktan sonra WhatsApp üzerinden bizimle iletişime geçeceksiniz.
+                Onayladıktan sonra güvenli ödeme sayfasına yönlendirileceksiniz.
+                Kredi kartı / banka kartı ile ödeme yapabilirsiniz.
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -459,14 +472,29 @@ export function SubscriptionPage({ onBack }: SubscriptionPageProps) {
             <AlertDialogCancel onClick={() => setPlanToUpgrade(null)}>İptal</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmPayment}
-              disabled={upgradeMutation.isPending}
+              disabled={isLoadingPayment}
               className="bg-primary hover:bg-primary/90"
             >
-              WhatsApp'tan Devam Et
+              {isLoadingPayment ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Yükleniyor...
+                </>
+              ) : (
+                'Ödemeye Geç'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* PayTR iFrame Payment Dialog */}
+      {paytrToken && (
+        <PayTRPaymentDialog
+          token={paytrToken}
+          onClose={() => setPaytrToken(null)}
+        />
+      )}
     </div>
   );
 }

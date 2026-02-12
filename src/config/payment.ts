@@ -1,18 +1,30 @@
 // Payment configuration
-// WhatsApp payment for all platforms
+// PayTR iFrame integration
 
 export const PAYMENT_CONFIG = {
-  // WhatsApp business number for payment inquiries (Web only)
-  WHATSAPP_NUMBER: '447925405768',
-
   // Payment method
-  PAYMENT_METHOD: 'whatsapp' as const,
+  PAYMENT_METHOD: 'paytr' as const,
+
+  // PayTR iFrame base URL
+  PAYTR_IFRAME_URL: 'https://www.paytr.com/odeme/guvenli/',
+
+  // Plans
+  PLANS: {
+    plus: {
+      amount: 4900, // kuruş cinsinden
+      name: 'Plus Aylık',
+      duration: '1 Ay',
+      displayPrice: '₺49',
+    },
+    premium: {
+      amount: 39900,
+      name: 'Plus Yıllık',
+      duration: '1 Yıl',
+      displayPrice: '₺399',
+    },
+  },
 };
 
-export const getWhatsAppPaymentUrl = (planName: string, price: string) => {
-  const message = encodeURIComponent(
-    `Merhaba! ${planName} planını satın almak istiyorum.\n\nPlan: ${planName}\nFiyat: ${price}\n\nÖdeme bilgilerini alabilir miyim?`
-  );
-
-  return `https://wa.me/${PAYMENT_CONFIG.WHATSAPP_NUMBER}?text=${message}`;
+export const getPayTRIframeUrl = (token: string) => {
+  return `${PAYMENT_CONFIG.PAYTR_IFRAME_URL}${token}`;
 };

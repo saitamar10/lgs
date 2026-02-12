@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Check, Crown, Sparkles, Loader2, Zap } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { getWhatsAppPaymentUrl } from '@/config/payment';
+import { supabase } from '@/integrations/supabase/client';
+import { PayTRPaymentDialog } from '@/components/PayTRPaymentDialog';
 
 interface PaywallDialogProps {
   open: boolean;
@@ -15,25 +16,34 @@ interface PaywallDialogProps {
 export function PaywallDialog({ open, onClose }: PaywallDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
+  const [paytrToken, setPaytrToken] = useState<string | null>(null);
 
   const handleSubscribe = async () => {
     setIsLoading(true);
 
     try {
-      // WhatsApp üzerinden ödeme
-      const planName = selectedPlan === 'monthly' ? 'Aylık Premium' : 'Yıllık Premium';
-      const price = selectedPlan === 'monthly' ? '₺29.99' : '₺249.99';
-      const whatsappUrl = getWhatsAppPaymentUrl(planName, price);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
 
-      toast.success('WhatsApp üzerinden ödeme için yönlendiriliyorsunuz...');
+      const plan_type = selectedPlan === 'monthly' ? 'plus' : 'premium';
 
-      // WhatsApp'a yönlendir
-      window.open(whatsappUrl, '_blank');
+      const { data, error } = await supabase.functions.invoke('create-paytr-token', {
+        body: { plan_type },
+      });
 
-      onClose();
-    } catch (error) {
+      if (error) throw error;
+
+      if (data?.status === 'success' && data?.token) {
+        localStorage.setItem('pending_order_id', data.merchant_oid);
+        localStorage.setItem('pending_plan_type', plan_type);
+        setPaytrToken(data.token);
+        onClose();
+      } else {
+        throw new Error(data?.detail || data?.error || 'Token alınamadı');
+      }
+    } catch (error: any) {
       console.error('Payment error:', error);
-      toast.error('Bir hata oluştu');
+      toast.error(error?.message || 'Bir hata oluştu');
     } finally {
       setIsLoading(false);
     }
@@ -43,7 +53,7 @@ export function PaywallDialog({ open, onClose }: PaywallDialogProps) {
     {
       id: 'monthly',
       name: 'Aylık Premium',
-      price: '29.99',
+      price: '45',
       duration: 'Ay',
       badge: 'Popüler',
       icon: Zap,
@@ -52,12 +62,12 @@ export function PaywallDialog({ open, onClose }: PaywallDialogProps) {
     {
       id: 'yearly',
       name: 'Yıllık Premium',
-      price: '249.99',
+      price: '450',
       duration: 'Yıl',
-      badge: '%30 İndirim',
+      badge: '%17 İndirim',
       icon: Crown,
       color: 'bg-gradient-to-r from-yellow-400 to-orange-500',
-      savings: 'Yılda 109.89 TL tasarruf!',
+      savings: 'Yılda 90 TL tasarruf!',
     },
   ];
 
@@ -75,6 +85,7 @@ export function PaywallDialog({ open, onClose }: PaywallDialogProps) {
   const selectedPlanData = plans.find(p => p.id === selectedPlan)!;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -169,7 +180,7 @@ export function PaywallDialog({ open, onClose }: PaywallDialogProps) {
               ) : (
                 <>
                   <Crown className="w-5 h-5 mr-2" />
-                  WhatsApp'tan Satın Al - {selectedPlanData.price} TL
+                  Ödemeye Geç - {selectedPlanData.price} TL
                 </>
               )}
             </Button>
@@ -184,5 +195,14 @@ export function PaywallDialog({ open, onClose }: PaywallDialogProps) {
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* PayTR iFrame Payment Dialog */}
+    {paytrToken && (
+      <PayTRPaymentDialog
+        token={paytrToken}
+        onClose={() => setPaytrToken(null)}
+      />
+    )}
+    </>
   );
 }

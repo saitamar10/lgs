@@ -56,7 +56,7 @@ export function SubscriptionPage({ onBack }: SubscriptionPageProps) {
     {
       id: 'monthly',
       name: 'Plus Aylık',
-      price: '₺49',
+      price: '₺45',
       period: 'ay',
       planType: 'plus' as const,
       features: [
@@ -75,11 +75,11 @@ export function SubscriptionPage({ onBack }: SubscriptionPageProps) {
     {
       id: 'yearly',
       name: 'Plus Yıllık',
-      price: '₺399',
+      price: '₺450',
       period: 'yıl',
       planType: 'premium' as const,
-      originalPrice: '₺588',
-      discount: '%32 İndirim',
+      originalPrice: '₺540',
+      discount: '%17 İndirim',
       features: [
         { text: 'Sınırsız can', included: true },
         { text: 'Tüm derslere erişim', included: true },
@@ -454,7 +454,7 @@ export function SubscriptionPage({ onBack }: SubscriptionPageProps) {
                 </div>
                 <div className="flex justify-between">
                   <span>Fiyat:</span>
-                  <strong>{planToUpgrade?.id === 'monthly' ? '₺49/ay' : '₺399/yıl'}</strong>
+                  <strong>{planToUpgrade?.id === 'monthly' ? '₺45/ay' : '₺450/yıl'}</strong>
                 </div>
                 <div className="flex justify-between">
                   <span>Süre:</span>

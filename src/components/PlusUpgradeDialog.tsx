@@ -6,7 +6,8 @@ import { useUpgradeSubscription } from '@/hooks/useSubscription';
 import { toast } from 'sonner';
 import { Crown, Heart, Bot, Award, Shield, Loader2, Check, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getWhatsAppPaymentUrl } from '@/config/payment';
+import { supabase } from '@/integrations/supabase/client';
+import { PayTRPaymentDialog } from '@/components/PayTRPaymentDialog';
 
 interface PlusUpgradeDialogProps {
   open: boolean;
@@ -24,6 +25,7 @@ export function PlusUpgradeDialog({ open, onClose }: PlusUpgradeDialogProps) {
   const [selectedPlan, setSelectedPlan] = useState<'plus' | 'premium'>('plus');
   const [showPayment, setShowPayment] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paytrToken, setPaytrToken] = useState<string | null>(null);
   const upgradeSubscription = useUpgradeSubscription();
 
 
@@ -31,20 +33,27 @@ export function PlusUpgradeDialog({ open, onClose }: PlusUpgradeDialogProps) {
     setIsProcessing(true);
 
     try {
-      // WhatsApp üzerinden ödeme (sadece web'de)
-      const planName = selectedPlan === 'plus' ? 'Plus Aylık' : 'Premium Yıllık';
-      const price = selectedPlan === 'plus' ? '₺49.99' : '₺359.99';
-      const whatsappUrl = getWhatsAppPaymentUrl(planName, price);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
 
-      toast.success('WhatsApp üzerinden ödeme için yönlendiriliyorsunuz...');
+      const { data, error } = await supabase.functions.invoke('create-paytr-token', {
+        body: { plan_type: selectedPlan },
+      });
 
-      // WhatsApp'a yönlendir
-      window.open(whatsappUrl, '_blank');
+      if (error) throw error;
 
-      onClose();
-      setShowPayment(false);
-    } catch (error) {
-      toast.error('Ödeme işlemi başarısız oldu');
+      if (data?.status === 'success' && data?.token) {
+        localStorage.setItem('pending_order_id', data.merchant_oid);
+        localStorage.setItem('pending_plan_type', selectedPlan);
+        setPaytrToken(data.token);
+        onClose();
+        setShowPayment(false);
+      } else {
+        throw new Error(data?.detail || data?.error || 'Token alınamadı');
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast.error(error?.message || 'Ödeme işlemi başarısız oldu');
     } finally {
       setIsProcessing(false);
     }
@@ -56,6 +65,7 @@ export function PlusUpgradeDialog({ open, onClose }: PlusUpgradeDialogProps) {
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
@@ -98,7 +108,7 @@ export function PlusUpgradeDialog({ open, onClose }: PlusUpgradeDialogProps) {
                     <p className="text-sm text-muted-foreground">Tüm Plus özellikleri</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-primary">₺49.99</p>
+                    <p className="text-2xl font-bold text-primary">₺45</p>
                     <p className="text-xs text-muted-foreground">/ay</p>
                   </div>
                 </CardContent>
@@ -117,8 +127,8 @@ export function PlusUpgradeDialog({ open, onClose }: PlusUpgradeDialogProps) {
                     <p className="text-sm text-muted-foreground">%40 tasarruf!</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-primary">₺359.99</p>
-                    <p className="text-xs text-muted-foreground">/yıl (₺30/ay)</p>
+                    <p className="text-2xl font-bold text-primary">₺450</p>
+                    <p className="text-xs text-muted-foreground">/yıl (₺37.5/ay)</p>
                   </div>
                 </CardContent>
               </Card>
@@ -142,16 +152,16 @@ export function PlusUpgradeDialog({ open, onClose }: PlusUpgradeDialogProps) {
                   {selectedPlan === 'plus' ? 'Plus Aylık' : 'Premium Yıllık'}
                 </span>
                 <span className="font-bold text-primary">
-                  {selectedPlan === 'plus' ? '₺49.99' : '₺359.99'}
+                  {selectedPlan === 'plus' ? '₺45' : '₺450'}
                 </span>
               </div>
 
               <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
                 <p className="text-sm text-muted-foreground text-center">
-                  📱 <strong>WhatsApp Ödeme</strong>
+                  <strong>Güvenli Ödeme</strong>
                   <br /><br />
-                  Onayladıktan sonra WhatsApp üzerinden bizimle iletişime geçeceksiniz.
-                  Ödeme bilgilerini size ileteceğiz.
+                  Onayladıktan sonra güvenli ödeme sayfasına yönlendirileceksiniz.
+                  Kredi kartı / banka kartı ile ödeme yapabilirsiniz.
                 </p>
               </div>
             </div>
@@ -177,7 +187,7 @@ export function PlusUpgradeDialog({ open, onClose }: PlusUpgradeDialogProps) {
                 ) : (
                   <>
                     <Check className="w-4 h-4 mr-2" />
-                    WhatsApp'a Devam Et
+                    Ödemeye Geç
                   </>
                 )}
               </Button>
@@ -190,5 +200,14 @@ export function PlusUpgradeDialog({ open, onClose }: PlusUpgradeDialogProps) {
         </p>
       </DialogContent>
     </Dialog>
+
+    {/* PayTR iFrame Payment Dialog */}
+    {paytrToken && (
+      <PayTRPaymentDialog
+        token={paytrToken}
+        onClose={() => setPaytrToken(null)}
+      />
+    )}
+    </>
   );
 }

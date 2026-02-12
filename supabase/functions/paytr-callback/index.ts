@@ -83,9 +83,9 @@ Deno.serve(async (req) => {
     // Determine plan type from total_amount (kuruş)
     const amount = parseInt(total_amount);
     let plan_type: 'plus' | 'premium';
-    if (amount === 4900) {
+    if (amount === 4500) {
       plan_type = 'plus';
-    } else if (amount === 39900) {
+    } else if (amount === 45000) {
       plan_type = 'premium';
     } else {
       console.error('Unknown payment amount:', amount);

@@ -11,16 +11,16 @@ export const PAYMENT_CONFIG = {
   // Plans
   PLANS: {
     plus: {
-      amount: 4900, // kuruş cinsinden
+      amount: 4500, // kuruş cinsinden
       name: 'Plus Aylık',
       duration: '1 Ay',
-      displayPrice: '₺49',
+      displayPrice: '₺45',
     },
     premium: {
-      amount: 39900,
+      amount: 45000,
       name: 'Plus Yıllık',
       duration: '1 Yıl',
-      displayPrice: '₺399',
+      displayPrice: '₺450',
     },
   },
 };

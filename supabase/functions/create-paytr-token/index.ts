@@ -60,8 +60,8 @@ interface PaymentRequest {
 }
 
 const PLAN_PRICES: Record<string, { amount: number; name: string; duration: string }> = {
-  plus: { amount: 4900, name: 'Plus Aylik', duration: '1 Ay' },
-  premium: { amount: 39900, name: 'Plus Yillik', duration: '1 Yil' },
+  plus: { amount: 4500, name: 'Plus Aylik', duration: '1 Ay' },
+  premium: { amount: 45000, name: 'Plus Yillik', duration: '1 Yil' },
 };
 
 Deno.serve(async (req) => {

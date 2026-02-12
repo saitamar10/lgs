@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
     }
 
     const plan = PLAN_PRICES[plan_type];
-    const merchant_oid = `LGS${user.id.substring(0, 8).replace(/-/g, '')}${Date.now()}`;
+    const merchantOid = `LGS${user.id.replace(/-/g, '')}T${Date.now()}`;
     const email = user.email || 'kullanici@lgscalis.com';
     const payment_amount = plan.amount; // Kurus cinsinden (4900 = 49 TL)
     const currency = 'TL';

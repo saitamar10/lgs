@@ -71,14 +71,20 @@ Deno.serve(async (req) => {
 
     console.log('PayTR hash verified successfully');
 
-    // Extract user_id from merchant_oid: LGS{userId8chars}{timestamp} format
-    // LGS = 3 chars, userId = 8 chars, rest = timestamp
-    if (merchant_oid.length < 12 || !merchant_oid.startsWith('LGS')) {
+    // Extract user_id from merchant_oid: LGS{userId32chars}T{timestamp} format
+    // LGS = 3 chars, userId (no dashes) = 32 chars, T = separator, rest = timestamp
+    if (!merchant_oid.startsWith('LGS') || !merchant_oid.includes('T')) {
       console.error('Invalid merchant_oid format:', merchant_oid);
       return new Response('OK', { status: 200 });
     }
 
-    const userIdPrefix = merchant_oid.substring(3, 11);
+    const tIndex = merchant_oid.indexOf('T', 3);
+    const userIdNoDashes = merchant_oid.substring(3, tIndex);
+
+    // Reconstruct UUID: 8-4-4-4-12
+    const userId = `${userIdNoDashes.slice(0,8)}-${userIdNoDashes.slice(8,12)}-${userIdNoDashes.slice(12,16)}-${userIdNoDashes.slice(16,20)}-${userIdNoDashes.slice(20)}`;
+
+    console.log('Extracted userId:', userId);
 
     // Determine plan type from total_amount (kuruş)
     const amount = parseInt(total_amount);
@@ -98,18 +104,8 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (status === 'success') {
-      // Find user by ID prefix
-      const { data: users, error: userError } = await supabase
-        .from('user_subscriptions')
-        .select('user_id')
-        .like('user_id', `${userIdPrefix}%`);
-
-      if (userError || !users || users.length === 0) {
-        console.error('User not found for prefix:', userIdPrefix, userError);
-        return new Response('OK', { status: 200 });
-      }
-
-      const user_id = users[0].user_id;
+      // Use exact user_id match
+      const user_id = userId;
 
       // Calculate expiry
       const now = new Date();

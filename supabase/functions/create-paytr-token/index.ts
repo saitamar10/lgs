@@ -7,6 +7,8 @@ import { encode as base64Encode } from 'https://deno.land/std@0.208.0/encoding/b
 const ALLOWED_ORIGINS = [
   'https://lgscalis.com',
   'https://www.lgscalis.com',
+  'https://lgscalis.com.tr',
+  'https://www.lgscalis.com.tr',
   'https://tuascnmjgbarrtwlxzcx.supabase.co',
   'http://localhost:8080',
   'http://localhost:5173',
@@ -17,7 +19,7 @@ function getCorsHeaders(req: Request) {
   const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
 }

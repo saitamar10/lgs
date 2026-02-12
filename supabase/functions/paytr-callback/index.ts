@@ -71,14 +71,14 @@ Deno.serve(async (req) => {
 
     console.log('PayTR hash verified successfully');
 
-    // Extract user_id from merchant_oid: LGS_{userId8chars}_{timestamp}
-    const oidParts = merchant_oid.split('_');
-    if (oidParts.length < 3 || oidParts[0] !== 'LGS') {
+    // Extract user_id from merchant_oid: LGS{userId8chars}{timestamp} format
+    // LGS = 3 chars, userId = 8 chars, rest = timestamp
+    if (merchant_oid.length < 12 || !merchant_oid.startsWith('LGS')) {
       console.error('Invalid merchant_oid format:', merchant_oid);
       return new Response('OK', { status: 200 });
     }
 
-    const userIdPrefix = oidParts[1]; // First 8 chars of user_id
+    const userIdPrefix = merchant_oid.substring(3, 11);
 
     // Determine plan type from total_amount (kuruş)
     const amount = parseInt(total_amount);

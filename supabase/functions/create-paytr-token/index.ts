@@ -121,8 +121,8 @@ Deno.serve(async (req) => {
 
     // Callback & return URLs
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const merchant_ok_url = 'https://lgscalis.com/payment-callback?status=success';
-    const merchant_fail_url = 'https://lgscalis.com/payment-callback?status=failed';
+    const merchant_ok_url = 'https://www.lgscalis.com.tr/payment-callback?status=success';
+    const merchant_fail_url = 'https://www.lgscalis.com.tr/payment-callback?status=failed';
     const paytr_callback_url = `${supabaseUrl}/functions/v1/paytr-callback`;
 
     // Basket - PayTR requires base64 encoded JSON array

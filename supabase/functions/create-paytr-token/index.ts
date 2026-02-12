@@ -166,6 +166,7 @@ Deno.serve(async (req) => {
     formData.append('user_phone', user_phone);
     formData.append('merchant_ok_url', merchant_ok_url);
     formData.append('merchant_fail_url', merchant_fail_url);
+    formData.append('paytr_callback_url', paytr_callback_url);
     formData.append('timeout_limit', timeout_limit);
     formData.append('currency', currency);
     formData.append('test_mode', test_mode);
